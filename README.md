@@ -19,6 +19,17 @@ Prototype web-based system for exploring the classic Titanic dataset using a nod
 3. Open `frontend/index.html` in a browser. The interface uses a dark theme and lists
    available nodes that can be connected similar to n8n.
 
+## Docker
+
+Build and run using Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+The API will be available at `http://localhost:8000` and the frontend at
+`http://localhost:3000`.
+
 ## Available Nodes
 
 - **LoadTitanic** – load the Titanic CSV dataset.
