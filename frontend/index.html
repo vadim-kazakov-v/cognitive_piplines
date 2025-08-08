@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Cognitive Pipelines</title>
+  <style>
+    body, html { margin:0; height:100%; background:#121212; color:#e0e0e0; font-family:sans-serif; }
+    #root { height:100%; }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/@reactflow/core@11.7.0/dist/style.css" />
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@reactflow/core@11.7.0/dist/reactflow.development.js"></script>
+  <script>
+    const { useState, useEffect } = React;
+    const { ReactFlowProvider, ReactFlow, addEdge } = ReactFlow;
+    function App() {
+      const [nodes, setNodes] = useState([
+        { id: '1', position: { x:0, y:0 }, data:{ label:'Start' }, type:'input' }
+      ]);
+      const [edges, setEdges] = useState([]);
+      useEffect(() => {
+        fetch('/nodes').then(r => r.json()).then(list => {
+          const newNodes = list.map((n,i) => ({
+            id: String(i+2),
+            position: { x: 150*i, y: 100 },
+            data: { label: n },
+            type: 'default'
+          }));
+          setNodes(nds => nds.concat(newNodes));
+        });
+      }, []);
+      return React.createElement(ReactFlow, {
+        nodes,
+        edges,
+        onConnect: (params) => setEdges(eds => addEdge(params, eds)),
+        fitView: true,
+        style: { background: '#1e1e1e' }
+      });
+    }
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      React.createElement(ReactFlowProvider, null, React.createElement(App))
+    );
+  </script>
+</body>
+</html>
