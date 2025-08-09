@@ -21,9 +21,10 @@ df = pd.read_csv(DATA_PATH)
 
 
 class Matrix(BaseModel):
-    """Simple wrapper for a 2D list of floats."""
+    """Simple wrapper for a 2D list of floats and optional params."""
 
     data: List[List[float]]
+    params: dict | None = None
 
 
 class CodeRequest(BaseModel):
@@ -53,7 +54,8 @@ def tsne(matrix: Matrix) -> list[list[float]]:
 
     from sklearn.manifold import TSNE
 
-    result = TSNE(n_components=2).fit_transform(matrix.data)
+    params = matrix.params or {}
+    result = TSNE(n_components=2, **params).fit_transform(matrix.data)
     return result.tolist()
 
 
@@ -63,7 +65,8 @@ def umap(matrix: Matrix) -> list[list[float]]:
 
     import umap
 
-    embedding = umap.UMAP(n_components=2).fit_transform(matrix.data)
+    params = matrix.params or {}
+    embedding = umap.UMAP(n_components=2, **params).fit_transform(matrix.data)
     return embedding.tolist()
 
 
@@ -73,7 +76,8 @@ def dbscan(matrix: Matrix) -> list[int]:
 
     from sklearn.cluster import DBSCAN
 
-    labels = DBSCAN().fit_predict(matrix.data)
+    params = matrix.params or {}
+    labels = DBSCAN(**params).fit_predict(matrix.data)
     return labels.tolist()
 
 

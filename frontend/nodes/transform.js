@@ -2,6 +2,7 @@ function SelectFieldNode() {
   this.addInput('data', 'array');
   this.addOutput('values', 'array');
   this.addProperty('field', 'Fare');
+  this.addWidget('text', 'field', this.properties.field, v => (this.properties.field = v));
 }
 SelectFieldNode.title = 'Select Field';
 SelectFieldNode.icon = '🔍';
