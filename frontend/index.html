@@ -3,20 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <title>Cognitive Pipelines UI</title>
-  <link rel="icon" href="favicon.ico" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="lib/litegraph.css">
   <style>
     html, body { height: 100%; margin: 0; background: #1e1e1e; color: #eee; }
     body { display: flex; overflow: hidden; font-family: sans-serif; }
     #sidebar { width: 200px; background: #2b2b2b; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #444; }
-    #sidebar button { background: #444; color: #eee; border: none; padding: 8px; cursor: pointer; border-radius: 4px; }
+    #sidebar button { background: #444; color: #eee; border: none; padding: 6px 8px; cursor: pointer; border-radius: 4px; text-align: left; }
     #sidebar button:hover { background: #555; }
+    #sidebar input { padding: 6px 8px; border-radius: 4px; border: 1px solid #444; background: #1e1e1e; color: #eee; }
+    #sidebar h3 { margin: 8px 0 4px; font-size: 14px; }
     #main { flex: 1; display: flex; }
     #graph { flex: 1; width: 100%; height: 100%; }
   </style>
 </head>
 <body>
   <div id="sidebar">
+    <button id="run-btn">Run</button>
+    <input id="node-search" placeholder="Search nodes" />
+    <div id="node-list"></div>
   </div>
   <div id="main">
     <canvas id="graph"></canvas>
@@ -36,16 +41,30 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
+    const groups = {};
     function registerNode(path, nodeClass) {
       LiteGraph.registerNodeType(path, nodeClass);
+      const [group, name] = path.split('/');
+      let container = groups[group];
+      if (!container) {
+        container = document.createElement('div');
+        const header = document.createElement('h3');
+        header.textContent = group;
+        const list = document.createElement('div');
+        container.appendChild(header);
+        container.appendChild(list);
+        document.getElementById('node-list').appendChild(container);
+        container.list = list;
+        groups[group] = container;
+      }
       const btn = document.createElement('button');
       btn.dataset.node = path;
-      btn.textContent = nodeClass.title || path;
-      document.getElementById('sidebar').appendChild(btn);
+      btn.textContent = `${nodeClass.icon || ''} ${nodeClass.title || name}`;
+      container.list.appendChild(btn);
     }
 
     let lastNode = null;
-    document.getElementById('sidebar').addEventListener('click', e => {
+    document.getElementById('node-list').addEventListener('click', e => {
       if (!e.target.dataset.node) return;
       const node = LiteGraph.createNode(e.target.dataset.node);
       node.pos = [Math.random() * 400 + 100, Math.random() * 200 + 100];
@@ -56,12 +75,54 @@
       lastNode = node;
     });
 
-    graph.start();
+    document.getElementById('run-btn').addEventListener('click', () => {
+      graph.start();
+    });
+
+    const search = document.getElementById('node-search');
+    search.addEventListener('input', () => {
+      const term = search.value.toLowerCase();
+      document.querySelectorAll('#node-list button').forEach(btn => {
+        btn.style.display = btn.textContent.toLowerCase().includes(term) ? '' : 'none';
+      });
+    });
+
+    graph.onNodeAdded = node => {
+      const origExec = node.onExecute;
+      if (origExec) {
+        node.onExecute = async function(...args) {
+          const prev = this.color;
+          this.color = '#6f6';
+          this.setDirtyCanvas(true);
+          try {
+            return await origExec.apply(this, args);
+          } finally {
+            this.color = prev;
+            this.setDirtyCanvas(true);
+          }
+        };
+      }
+      if (node.properties) {
+        const origDraw = node.onDrawForeground;
+        node.onDrawForeground = function(ctx) {
+          if (origDraw) origDraw.call(this, ctx);
+          let y = 20;
+          ctx.fillStyle = '#fff';
+          ctx.font = '12px sans-serif';
+          for (const key in this.properties) {
+            const val = this.properties[key];
+            ctx.fillText(`${key}: ${val}`, 4, y);
+            y += 14;
+          }
+        };
+      }
+    };
   </script>
   <script src="nodes/data.js"></script>
   <script src="nodes/transform.js"></script>
   <script src="nodes/visualize.js"></script>
   <script src="nodes/util.js"></script>
   <script src="nodes/ml.js"></script>
+  <script src="nodes/python.js"></script>
 </body>
 </html>

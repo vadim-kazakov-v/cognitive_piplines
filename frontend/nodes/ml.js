@@ -25,11 +25,13 @@ ApiNode.prototype.onExecute = async function() {
 
 function TsneNode() { ApiNode.call(this, 'tsne', 't-SNE'); }
 TsneNode.title = 't-SNE';
+TsneNode.icon = '🌀';
 TsneNode.prototype = Object.create(ApiNode.prototype);
 registerNode('ml/tsne', TsneNode);
 
 function UmapNode() { ApiNode.call(this, 'umap', 'UMAP'); }
 UmapNode.title = 'UMAP';
+UmapNode.icon = '🌐';
 UmapNode.prototype = Object.create(ApiNode.prototype);
 registerNode('ml/umap', UmapNode);
 
@@ -37,6 +39,7 @@ function DbscanNode() {
   ApiNode.call(this, 'dbscan', 'DBSCAN');
 }
 DbscanNode.title = 'DBSCAN';
+DbscanNode.icon = '🌌';
 DbscanNode.prototype = Object.create(ApiNode.prototype);
 registerNode('ml/dbscan', DbscanNode);
 

@@ -4,6 +4,7 @@ function SelectFieldNode() {
   this.addProperty('field', 'Fare');
 }
 SelectFieldNode.title = 'Select Field';
+SelectFieldNode.icon = '🔍';
 SelectFieldNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;

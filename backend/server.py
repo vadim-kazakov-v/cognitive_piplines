@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Any
 
 import pandas as pd
 from fastapi import FastAPI
@@ -24,6 +24,11 @@ class Matrix(BaseModel):
     """Simple wrapper for a 2D list of floats."""
 
     data: List[List[float]]
+
+
+class CodeRequest(BaseModel):
+    code: str
+    data: Any | None = None
 
 
 @app.get("/health")
@@ -70,6 +75,19 @@ def dbscan(matrix: Matrix) -> list[int]:
 
     labels = DBSCAN().fit_predict(matrix.data)
     return labels.tolist()
+
+
+@app.post("/python")
+def run_python(req: CodeRequest) -> Any:
+    """Execute arbitrary Python code with optional data."""
+
+    local = {"data": req.data}
+    try:
+        result = eval(req.code, {}, local)
+    except Exception:
+        exec(req.code, {}, local)
+        result = local.get("result")
+    return result
 
 
 if __name__ == "__main__":
