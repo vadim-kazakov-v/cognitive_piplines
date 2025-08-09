@@ -27,11 +27,13 @@
   <script>
     const graph = new LGraph();
     const canvas = new LGraphCanvas("#graph", graph);
+    canvas.allow_interaction = canvas.allow_dragcanvas = canvas.allow_dragnodes = true;
     canvas.canvas.addEventListener('dblclick', e => { canvas.adjustMouseEvent(e); canvas.showSearchBox(e); });
 
     function resizeCanvas() {
-      const rect = canvas.canvas.getBoundingClientRect();
+      const rect = document.getElementById('main').getBoundingClientRect();
       canvas.resize(rect.width, rect.height);
+      canvas.setZoom(1, [rect.width / 2, rect.height / 2]);
     }
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
@@ -44,11 +46,16 @@
       document.getElementById('sidebar').appendChild(btn);
     }
 
+    let lastNode = null;
     document.getElementById('sidebar').addEventListener('click', e => {
       if (!e.target.dataset.node) return;
       const node = LiteGraph.createNode(e.target.dataset.node);
       node.pos = [Math.random() * 400 + 100, Math.random() * 200 + 100];
       graph.add(node);
+      if (lastNode && lastNode.outputs?.length && node.inputs?.length) {
+        lastNode.connect(0, node, 0);
+      }
+      lastNode = node;
     });
 
     graph.start();
