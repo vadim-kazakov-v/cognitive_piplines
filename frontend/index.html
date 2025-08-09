@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>Cognitive Pipelines UI</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litegraph.js@0.8.5/build/litegraph.css">
+  <link rel="icon" href="favicon.ico" />
+  <link rel="stylesheet" href="lib/litegraph.css">
   <style>
     html, body { height: 100%; margin: 0; }
     body { display: flex; overflow: hidden; font-family: sans-serif; }
@@ -20,7 +21,7 @@
     <div id="graph"></div>
     <canvas id="chart"></canvas>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/litegraph.js@0.8.5/build/litegraph.min.js"></script>
+  <script src="lib/litegraph.min.js"></script>
   <script>
     const graph = new LGraph();
     const canvas = new LGraphCanvas("#graph", graph);
