@@ -38,3 +38,13 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Log** – inspect any data in the developer console
 
 Connect nodes to create analysis pipelines; for instance, link **Titanic Sample → Select Field (Fare) → t‑SNE → Scatter Plot** to see an embedding of fare values.
+
+## Docker
+
+Run the stack with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+The API will be available at [http://localhost:8000](http://localhost:8000) and the frontend at [http://localhost:8080](http://localhost:8080).
