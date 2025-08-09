@@ -29,6 +29,13 @@
     const canvas = new LGraphCanvas("#graph", graph);
     canvas.canvas.addEventListener('dblclick', e => { canvas.adjustMouseEvent(e); canvas.showSearchBox(e); });
 
+    function resizeCanvas() {
+      const rect = canvas.canvas.getBoundingClientRect();
+      canvas.resize(rect.width, rect.height);
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
     function registerNode(path, nodeClass) {
       LiteGraph.registerNodeType(path, nodeClass);
       const btn = document.createElement('button');
