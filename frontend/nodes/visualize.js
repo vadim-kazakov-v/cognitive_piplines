@@ -3,6 +3,7 @@ function BarChartNode() {
   this.size = [200, 150];
 }
 BarChartNode.title = 'Bar Chart';
+BarChartNode.icon = '📊';
 BarChartNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
@@ -29,6 +30,7 @@ function ScatterPlotNode() {
   this.size = [200, 150];
 }
 ScatterPlotNode.title = 'Scatter Plot';
+ScatterPlotNode.icon = '📈';
 ScatterPlotNode.prototype.onExecute = function() {
   const pts = this.getInputData(0);
   if (!pts) return;

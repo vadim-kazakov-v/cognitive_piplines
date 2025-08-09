@@ -2,6 +2,7 @@ function TitanicNode() {
   this.addOutput('data', 'array');
 }
 TitanicNode.title = 'Titanic Sample';
+TitanicNode.icon = '🚢';
 TitanicNode.prototype.onExecute = async function() {
   if (this._pending) return;
   this._pending = true;
