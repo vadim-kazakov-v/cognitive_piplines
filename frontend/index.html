@@ -5,13 +5,14 @@
   <title>Cognitive Pipelines UI</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="lib/litegraph.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
   <style>
     html, body { height: 100%; margin: 0; background: #1e1e1e; color: #eee; }
     body { display: flex; overflow: hidden; font-family: sans-serif; }
-    #sidebar { width: 200px; background: #2b2b2b; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #444; }
-    #sidebar button { background: #444; color: #eee; border: none; padding: 6px 8px; cursor: pointer; border-radius: 4px; text-align: left; }
-    #sidebar button:hover { background: #555; }
-    #sidebar input { padding: 6px 8px; border-radius: 4px; border: 1px solid #444; background: #1e1e1e; color: #eee; }
+    #sidebar { width: 220px; backdrop-filter: blur(8px); background: rgba(40,40,40,0.6); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #444; }
+    #sidebar button { background: rgba(80,80,80,0.6); color: #eee; border: none; padding: 6px 8px; cursor: pointer; border-radius: 6px; text-align: left; }
+    #sidebar button:hover { background: rgba(120,120,120,0.6); }
+    #sidebar input { padding: 6px 8px; border-radius: 6px; border: 1px solid #444; background: rgba(30,30,30,0.6); color: #eee; }
     #sidebar h3 { margin: 8px 0 4px; font-size: 14px; }
     #main { flex: 1; display: flex; }
     #graph { flex: 1; width: 100%; height: 100%; }
@@ -20,6 +21,9 @@
 <body>
   <div id="sidebar">
     <button id="run-btn">Run</button>
+    <button id="save-flow">Save Flow</button>
+    <button id="load-flow">Load Flow</button>
+    <input id="file-input" type="file" accept="application/json" style="display:none" />
     <input id="node-search" placeholder="Search nodes" />
     <div id="node-list"></div>
   </div>
@@ -27,9 +31,15 @@
     <canvas id="graph"></canvas>
   </div>
   <script src="lib/litegraph.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/languages/python.min.js"></script>
   <script>
+    hljs.highlightAll();
     const graph = new LGraph();
     const canvas = new LGraphCanvas("#graph", graph);
+    LiteGraph.NODE_DEFAULT_BGCOLOR = "rgba(255,255,255,0.15)";
+    LiteGraph.NODE_DEFAULT_COLOR = "#88a";
+    LiteGraph.NODE_TITLE_COLOR = "#fff";
     canvas.allow_interaction = canvas.allow_dragcanvas = canvas.allow_dragnodes = true;
     canvas.canvas.addEventListener('dblclick', e => { canvas.adjustMouseEvent(e); canvas.showSearchBox(e); });
 
@@ -78,6 +88,26 @@
     document.getElementById('run-btn').addEventListener('click', () => {
       graph.start();
     });
+    document.getElementById('save-flow').addEventListener('click', () => {
+      const data = JSON.stringify(graph.serialize(), null, 2);
+      const blob = new Blob([data], {type:'application/json'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'flow.json';
+      a.click();
+    });
+    document.getElementById('load-flow').addEventListener('click', () => {
+      document.getElementById('file-input').click();
+    });
+    document.getElementById('file-input').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      file.text().then(txt => {
+        const data = JSON.parse(txt);
+        graph.clear();
+        graph.configure(data);
+      });
+    });
 
     const search = document.getElementById('node-search');
     search.addEventListener('input', () => {
@@ -111,12 +141,26 @@
           ctx.font = '12px sans-serif';
           for (const key in this.properties) {
             const val = this.properties[key];
-            ctx.fillText(`${key}: ${val}`, 4, y);
+            ctx.fillText(`${key}: ${Math.round(val * 1000) / 1000}`, 4, y);
             y += 14;
           }
         };
       }
     };
+
+    function defaultPipeline() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const umap = LiteGraph.createNode('ml/umap');
+      umap.pos = [250, 150];
+      const scatter = LiteGraph.createNode('viz/scatter2d');
+      scatter.pos = [450, 150];
+      graph.add(titanic);
+      graph.add(umap);
+      graph.add(scatter);
+      titanic.connect(0, umap, 0);
+      umap.connect(0, scatter, 0);
+    }
   </script>
   <script src="nodes/data.js"></script>
   <script src="nodes/transform.js"></script>
@@ -124,5 +168,6 @@
   <script src="nodes/util.js"></script>
   <script src="nodes/ml.js"></script>
   <script src="nodes/python.js"></script>
+  <script>defaultPipeline();</script>
 </body>
 </html>
