@@ -1,3 +1,41 @@
+function enableInteraction(node) {
+  node._zoom = 1;
+  node._offset = [0, 0];
+  node.onMouseDown = function(e) {
+    const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const localY = e.canvasy - this.pos[1];
+    if (localY < top) return; // ignore clicks on widgets
+    this._dragging = true;
+    this._last = [e.canvasx, e.canvasy];
+    this.captureInput(true);
+    return true;
+  };
+  node.onMouseMove = function(e) {
+    if (this._dragging) {
+      this._offset[0] += e.canvasx - this._last[0];
+      this._offset[1] += e.canvasy - this._last[1];
+      this._last = [e.canvasx, e.canvasy];
+      this.setDirtyCanvas(true);
+      return true;
+    }
+  };
+  node.onMouseUp = function() {
+    this._dragging = false;
+    this.captureInput(false);
+  };
+  node.onMouseWheel = function(e) {
+    const delta = e.wheelDeltaY ? e.wheelDeltaY : -e.deltaY;
+    const scale = delta > 0 ? 1.1 : 0.9;
+    const x = e.canvasx - this.pos[0] - this._offset[0];
+    const y = e.canvasy - this.pos[1] - this._offset[1];
+    this._offset[0] -= x * (scale - 1);
+    this._offset[1] -= y * (scale - 1);
+    this._zoom *= scale;
+    this.setDirtyCanvas(true);
+    return true;
+  };
+}
+
 function BarChartNode() {
   this.addInput('data', 'array');
   this.size = [200, 150];
@@ -12,6 +50,7 @@ function BarChartNode() {
     a.download = 'barchart.png';
     a.click();
   });
+  enableInteraction(this);
 }
 BarChartNode.title = 'Bar Chart';
 BarChartNode.icon = '📊';
@@ -23,16 +62,21 @@ BarChartNode.prototype.onExecute = function() {
 };
 BarChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
+  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
-  const h = this.size[1];
+  const h = this.size[1] - top;
   const max = Math.max(...this._values) || 1;
   const barWidth = w / this._values.length;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
   ctx.fillStyle = '#3a7';
   for (let i = 0; i < this._values.length; i++) {
     const v = this._values[i];
     const barHeight = (v / max) * h;
     ctx.fillRect(i * barWidth, h - barHeight, barWidth - 2, barHeight);
   }
+  ctx.restore();
 };
 registerNode('viz/bar', BarChartNode);
 
@@ -50,6 +94,7 @@ function Scatter2DNode() {
     a.download = 'scatter.png';
     a.click();
   });
+  enableInteraction(this);
 }
 Scatter2DNode.title = 'Scatter2D';
 Scatter2DNode.icon = '📈';
@@ -61,14 +106,18 @@ Scatter2DNode.prototype.onExecute = function() {
 };
 Scatter2DNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
+  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
-  const h = this.size[1];
+  const h = this.size[1] - top;
   const xs = this._pts.map(p => p[0]);
   const ys = this._pts.map(p => p[1]);
   const minX = Math.min(...xs);
   const maxX = Math.max(...xs);
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
   ctx.fillStyle = '#7af';
   for (const p of this._pts) {
     const x = ((p[0] - minX) / ((maxX - minX) || 1)) * w;
@@ -77,6 +126,7 @@ Scatter2DNode.prototype.onDrawBackground = function(ctx) {
     ctx.arc(x, y, 3, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.restore();
 };
 registerNode('viz/scatter2d', Scatter2DNode);
 
@@ -94,6 +144,7 @@ function LineChartNode() {
     a.download = 'linechart.png';
     a.click();
   });
+  enableInteraction(this);
 }
 LineChartNode.title = 'Line Chart';
 LineChartNode.icon = '📉';
@@ -105,10 +156,14 @@ LineChartNode.prototype.onExecute = function() {
 };
 LineChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
+  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
-  const h = this.size[1];
+  const h = this.size[1] - top;
   const max = Math.max(...this._values);
   const min = Math.min(...this._values);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
   ctx.strokeStyle = '#faa';
   ctx.beginPath();
   this._values.forEach((v, i) => {
@@ -118,6 +173,7 @@ LineChartNode.prototype.onDrawBackground = function(ctx) {
     else ctx.lineTo(x, y);
   });
   ctx.stroke();
+  ctx.restore();
 };
 registerNode('viz/line', LineChartNode);
 
@@ -135,6 +191,7 @@ function HistogramNode() {
     a.download = 'histogram.png';
     a.click();
   });
+  enableInteraction(this);
 }
 HistogramNode.title = 'Histogram';
 HistogramNode.icon = '📚';
@@ -147,8 +204,9 @@ HistogramNode.prototype.onExecute = function() {
 HistogramNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
   const bins = 10;
+  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
-  const h = this.size[1];
+  const h = this.size[1] - top;
   const min = Math.min(...this._values);
   const max = Math.max(...this._values);
   const binSize = (max - min) / bins || 1;
@@ -159,11 +217,15 @@ HistogramNode.prototype.onDrawBackground = function(ctx) {
   }
   const maxCount = Math.max(...counts) || 1;
   const barWidth = w / bins;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
   ctx.fillStyle = '#af7';
   for (let i = 0; i < bins; i++) {
     const barHeight = (counts[i] / maxCount) * h;
     ctx.fillRect(i * barWidth, h - barHeight, barWidth - 2, barHeight);
   }
+  ctx.restore();
 };
 registerNode('viz/hist', HistogramNode);
 

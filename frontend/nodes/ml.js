@@ -4,6 +4,7 @@ function ApiNode(endpoint, title, params) {
   this.addOutput('result', 'array');
   this.title = title;
   this.properties = {};
+  this._paramOpts = params || {};
   if (params) {
     for (const key in params) {
       const opt = params[key];
@@ -25,7 +26,15 @@ ApiNode.prototype.onExecute = async function() {
   }
   const payload = { data };
   if (this.properties && Object.keys(this.properties).length) {
-    payload.params = this.properties;
+    payload.params = {};
+    for (const k in this.properties) {
+      let val = this.properties[k];
+      const opt = this._paramOpts[k];
+      if (!opt || opt.step === undefined || opt.step === 1 || opt.step === 1.0) {
+        val = Math.round(val);
+      }
+      payload.params[k] = val;
+    }
   }
   this._pending = true;
   try {

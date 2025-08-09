@@ -6,28 +6,83 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="lib/litegraph.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.min.css">
-  <style>
-    html, body { height: 100%; margin: 0; background: #1e1e1e; color: #eee; }
-    body { display: flex; overflow: hidden; font-family: sans-serif; }
-    #sidebar { width: 220px; backdrop-filter: blur(8px); background: rgba(40,40,40,0.6); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid #444; }
-    #sidebar button { background: rgba(80,80,80,0.6); color: #eee; border: none; padding: 6px 8px; cursor: pointer; border-radius: 6px; text-align: left; }
-    #sidebar button:hover { background: rgba(120,120,120,0.6); }
-    #sidebar input { padding: 6px 8px; border-radius: 6px; border: 1px solid #444; background: rgba(30,30,30,0.6); color: #eee; }
-    #sidebar h3 { margin: 8px 0 4px; font-size: 14px; }
-    #main { flex: 1; display: flex; }
-    #graph { flex: 1; width: 100%; height: 100%; }
+    <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      color: #eee;
+      background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    }
+    body {
+      display: flex;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    .glass {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.3);
+      box-shadow: 0 4px 30px rgba(0,0,0,0.1);
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+    }
+    #sidebar {
+      width: 220px;
+      padding: 10px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-right: 1px solid rgba(255,255,255,0.2);
+    }
+    #sidebar button,
+    #sidebar input,
+    #layout-mode {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      color: #fff;
+      padding: 6px 8px;
+    }
+    #sidebar button {
+      cursor: pointer;
+      text-align: left;
+    }
+    #sidebar button:hover {
+      background: rgba(255,255,255,0.25);
+    }
+    #sidebar h3 {
+      margin: 8px 0 4px;
+      font-size: 14px;
+    }
+    #main {
+      flex: 1;
+      display: flex;
+    }
+    #graph {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body>
-  <div id="sidebar">
+  <div id="sidebar" class="glass">
     <button id="run-btn">Run</button>
+    <button id="stop-btn">Stop</button>
     <button id="save-flow">Save Flow</button>
     <button id="load-flow">Load Flow</button>
+    <select id="layout-mode">
+      <option value="horizontal">Horizontal</option>
+      <option value="vertical">Vertical</option>
+    </select>
+    <button id="layout-btn">Auto Layout</button>
     <input id="file-input" type="file" accept="application/json" style="display:none" />
     <input id="node-search" placeholder="Search nodes" />
     <div id="node-list"></div>
   </div>
-  <div id="main">
+  <div id="main" class="glass">
     <canvas id="graph"></canvas>
   </div>
   <script src="lib/litegraph.min.js"></script>
@@ -92,6 +147,13 @@
 
     document.getElementById('run-btn').addEventListener('click', () => {
       graph.start();
+    });
+    document.getElementById('stop-btn').addEventListener('click', () => {
+      graph.stop();
+    });
+    document.getElementById('layout-btn').addEventListener('click', () => {
+      const mode = document.getElementById('layout-mode').value;
+      graph.arrange(100, mode === 'vertical' ? LiteGraph.VERTICAL_LAYOUT : undefined);
     });
     document.getElementById('save-flow').addEventListener('click', () => {
       const data = JSON.stringify(graph.serialize(), null, 2);
