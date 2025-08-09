@@ -7,14 +7,25 @@
     body, html { margin:0; height:100%; background:#121212; color:#e0e0e0; font-family:sans-serif; }
     #root { height:100%; }
   </style>
-  <link rel="stylesheet" href="https://unpkg.com/@reactflow/core@11.7.0/dist/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/reactflow@11.7.0/dist/style.css" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🚀</text></svg>" />
 </head>
 <body>
   <div id="root"></div>
+  <!-- provide React's JSX runtime for ReactFlow's UMD build -->
+  <script>
+    window.exports = {};
+    window.module = { exports };
+  </script>
+  <script src="https://unpkg.com/react@18/jsx-runtime.js"></script>
+  <script>
+    window.jsxRuntime = window.module.exports;
+    delete window.module;
+    delete window.exports;
+  </script>
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@reactflow/core@11.7.0/dist/reactflow.development.js"></script>
+  <script src="https://unpkg.com/reactflow@11.7.0/dist/umd/index.js"></script>
   <script>
     const { useState, useEffect } = React;
     const { ReactFlowProvider, ReactFlow: ReactFlowComponent, addEdge } = ReactFlow;
