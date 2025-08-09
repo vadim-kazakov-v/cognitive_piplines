@@ -101,7 +101,7 @@
     LiteGraph.NODE_DEFAULT_BGCOLOR = "rgba(255,255,255,0)";
     LiteGraph.NODE_DEFAULT_COLOR = "rgba(255,255,255,0)";
     LiteGraph.NODE_DEFAULT_BOXCOLOR = "rgba(255,255,255,0)";
-    LiteGraph.NODE_TITLE_COLOR = "#fff";
+    LiteGraph.NODE_TITLE_COLOR = "#000";
     canvas.allow_interaction = canvas.allow_dragcanvas = canvas.allow_dragnodes = true;
     canvas.canvas.addEventListener('dblclick', e => { canvas.adjustMouseEvent(e); canvas.showSearchBox(e); });
 
@@ -242,7 +242,7 @@
         node.onDrawForeground = function(ctx) {
           if (origDraw) origDraw.call(this, ctx);
           let y = 20;
-          ctx.fillStyle = '#fff';
+          ctx.fillStyle = '#000';
           ctx.font = '12px sans-serif';
           for (const key in this.properties) {
             const val = this.properties[key];
