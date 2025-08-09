@@ -19,12 +19,12 @@
       font-family: sans-serif;
     }
     .glass {
-      background: rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.1);
       border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.3);
-      box-shadow: 0 4px 30px rgba(0,0,0,0.1);
-      backdrop-filter: blur(12px) saturate(180%);
-      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.4);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
     }
     #sidebar {
       width: 220px;
@@ -97,8 +97,12 @@
     }
     const graph = new LGraph();
     const canvas = new LGraphCanvas("#graph", graph);
-    LiteGraph.NODE_DEFAULT_BGCOLOR = "rgba(255,255,255,0.15)";
-    LiteGraph.NODE_DEFAULT_COLOR = "#88a";
+    canvas.render_shadows = false;
+    canvas.round_radius = 12;
+    LiteGraph.NODE_DEFAULT_SHAPE = LiteGraph.ROUND_SHAPE;
+    LiteGraph.NODE_DEFAULT_BGCOLOR = "rgba(255,255,255,0)";
+    LiteGraph.NODE_DEFAULT_COLOR = "rgba(255,255,255,0)";
+    LiteGraph.NODE_DEFAULT_BOXCOLOR = "rgba(255,255,255,0)";
     LiteGraph.NODE_TITLE_COLOR = "#fff";
     canvas.allow_interaction = canvas.allow_dragcanvas = canvas.allow_dragnodes = true;
     canvas.canvas.addEventListener('dblclick', e => { canvas.adjustMouseEvent(e); canvas.showSearchBox(e); });
@@ -185,6 +189,42 @@
     });
 
     graph.onNodeAdded = node => {
+      node.color = "rgba(255,255,255,0)";
+      node.bgcolor = "rgba(255,255,255,0)";
+      node.boxcolor = "rgba(255,255,255,0)";
+      node.onDrawBackground = function(ctx) {
+        const w = this.size[0];
+        const h = this.size[1];
+        const r = 12;
+        ctx.save();
+        ctx.shadowColor = "rgba(0,0,0,0.2)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(0,0,w,h,r);
+        else {
+          ctx.moveTo(r,0);
+          ctx.lineTo(w - r,0);
+          ctx.quadraticCurveTo(w,0,w,r);
+          ctx.lineTo(w,h - r);
+          ctx.quadraticCurveTo(w,h,w - r,h);
+          ctx.lineTo(r,h);
+          ctx.quadraticCurveTo(0,h,0,h - r);
+          ctx.lineTo(0,r);
+          ctx.quadraticCurveTo(0,0,r,0);
+        }
+        const grad = ctx.createLinearGradient(0,0,0,h);
+        grad.addColorStop(0,"rgba(255,255,255,0.4)");
+        grad.addColorStop(1,"rgba(255,255,255,0.1)");
+        ctx.fillStyle = grad;
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 1.5;
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      };
+
       const origExec = node.onExecute;
       if (origExec) {
         node.onExecute = async function(...args) {
