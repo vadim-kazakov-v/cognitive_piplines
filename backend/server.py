@@ -136,7 +136,15 @@ def run_python(req: CodeRequest) -> Any:
     except Exception:
         exec(req.code, {}, local)
         result = local.get("result")
-    return result
+    # ensure the result is JSON serialisable
+    if callable(result):
+        return repr(result)
+    try:
+        from fastapi.encoders import jsonable_encoder
+
+        return jsonable_encoder(result)
+    except Exception as exc:  # pragma: no cover - fallback on serialization issues
+        raise HTTPException(status_code=400, detail=f"Unable to serialize result: {exc}")
 
 
 if __name__ == "__main__":
