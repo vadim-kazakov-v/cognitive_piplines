@@ -34,6 +34,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Titanic Sample** – load example passenger records
 - **Select Field** – choose columns via dropdown or checkboxes
 - **Bar Chart**, **Scatter Plot**, and **Scatter3D** – visualize numeric data
+- **Correlation Map** – visualize pairwise correlations as a heatmap
 - **t‑SNE**, **UMAP**, and **DBSCAN** – run analytics algorithms on arrays of numbers
 - **Log** – inspect any data in the developer console
 
