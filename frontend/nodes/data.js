@@ -43,3 +43,31 @@ RandomDataNode.prototype.onExecute = function() {
 };
 registerNode('data/random', RandomDataNode);
 
+function DescribeTableNode() {
+  this.addInput('data', 'array');
+  this.addOutput('stats', 'object');
+  this.color = '#222';
+  this.bgcolor = '#444';
+}
+DescribeTableNode.title = 'Describe Table';
+DescribeTableNode.icon = '📋';
+DescribeTableNode.prototype.onExecute = async function() {
+  const data = this.getInputData(0);
+  if (!data || this._pending) return;
+  this._pending = true;
+  try {
+    const res = await fetch('http://localhost:8000/describe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data }),
+    });
+    const out = await res.json();
+    this.setOutputData(0, out);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    this._pending = false;
+  }
+};
+registerNode('data/describe', DescribeTableNode);
+
