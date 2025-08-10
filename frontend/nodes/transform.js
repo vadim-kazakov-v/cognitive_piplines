@@ -190,3 +190,107 @@ JoinDataFramesNode.prototype.onExecute = function() {
 };
 registerNode('transform/join', JoinDataFramesNode);
 
+function ToNumberNode() {
+  this.addInput('data', 'array');
+  this.addOutput('data', 'array');
+  this.color = '#222';
+  this.bgcolor = '#444';
+}
+ToNumberNode.title = 'To Number';
+ToNumberNode.icon = '🔢';
+ToNumberNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (data === undefined || data === null) return;
+  if (Array.isArray(data)) {
+    this.setOutputData(
+      0,
+      data.map(v => {
+        const n = parseFloat(v);
+        return isNaN(n) ? 0 : n;
+      }),
+    );
+  } else {
+    const n = parseFloat(data);
+    this.setOutputData(0, isNaN(n) ? 0 : n);
+  }
+};
+registerNode('transform/tonumber', ToNumberNode);
+
+function ToStringNode() {
+  this.addInput('data', 'array');
+  this.addOutput('data', 'array');
+  this.color = '#222';
+  this.bgcolor = '#444';
+}
+ToStringNode.title = 'To String';
+ToStringNode.icon = '🔤';
+ToStringNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (data === undefined || data === null) return;
+  if (Array.isArray(data)) {
+    this.setOutputData(0, data.map(v => String(v)));
+  } else {
+    this.setOutputData(0, String(data));
+  }
+};
+registerNode('transform/tostring', ToStringNode);
+
+function ToBooleanNode() {
+  this.addInput('data', 'array');
+  this.addOutput('data', 'array');
+  this.color = '#222';
+  this.bgcolor = '#444';
+}
+ToBooleanNode.title = 'To Boolean';
+ToBooleanNode.icon = '✔️';
+ToBooleanNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (data === undefined || data === null) return;
+  if (Array.isArray(data)) {
+    this.setOutputData(0, data.map(v => Boolean(v)));
+  } else {
+    this.setOutputData(0, Boolean(data));
+  }
+};
+registerNode('transform/toboolean', ToBooleanNode);
+
+function RescaleNode() {
+  this.addInput('data', 'array');
+  this.addOutput('data', 'array');
+  this.addProperty('min', 0);
+  this.addProperty('max', 1);
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('slider', 'min', this.properties.min, v => (this.properties.min = v), {
+    min: -1,
+    max: 1,
+    step: 0.01,
+  });
+  this.addWidget('slider', 'max', this.properties.max, v => (this.properties.max = v), {
+    min: -1,
+    max: 1,
+    step: 0.01,
+  });
+}
+RescaleNode.title = 'Rescale';
+RescaleNode.icon = '📏';
+RescaleNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (!Array.isArray(data) || !data.length) return;
+  const nums = data.map(v => parseFloat(v)).filter(v => !isNaN(v));
+  if (!nums.length) return;
+  const dMin = Math.min(...nums);
+  const dMax = Math.max(...nums);
+  const range = dMax - dMin;
+  const tMin = this.properties.min;
+  const tMax = this.properties.max;
+  const tRange = tMax - tMin;
+  const out = data.map(v => {
+    const n = parseFloat(v);
+    if (isNaN(n) || range === 0) return tMin;
+    return ((n - dMin) / range) * tRange + tMin;
+  });
+  this.setOutputData(0, out);
+};
+registerNode('transform/rescale', RescaleNode);
+

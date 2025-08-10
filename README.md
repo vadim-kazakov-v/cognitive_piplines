@@ -37,6 +37,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 
 - **Titanic Sample** – load example passenger records
 - **Select Field** – choose columns via dropdown or checkboxes
+- **To Number**, **To String**, **To Boolean**, and **Rescale** – convert values or scale numeric ranges
 - **Bar Chart**, **Scatter Plot**, and **Scatter3D** – visualize numeric data
 - **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, and **KMeans** – run analytics algorithms on arrays of numbers
 - **Spectral**, **GMM** – additional clustering tools
