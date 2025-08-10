@@ -100,11 +100,36 @@ DescribeTableNode.prototype.onExecute = async function() {
     const obj = await res.json();
     const out = Object.entries(obj).map(([field, stats]) => ({ field, ...stats }));
     this._stats = out;
+
+    // build markdown-style table lines
+    const fields = Object.keys(out[0] || {});
+    const rows = out.map(row => fields.map(f => row[f]));
+    const fmt = v => (typeof v === 'number' ? v.toFixed(2) : String(v));
+    const colWidths = fields.map((f, i) =>
+      Math.max(
+        f.length,
+        ...rows.map(r => fmt(r[i]).length)
+      )
+    );
+    const lines = [];
+    lines.push(
+      '| ' + fields.map((f, i) => f.padEnd(colWidths[i])).join(' | ') + ' |'
+    );
+    lines.push(
+      '| ' + colWidths.map(w => '-'.repeat(w)).join(' | ') + ' |'
+    );
+    for (const r of rows.slice(0, 10)) {
+      lines.push(
+        '| ' + r.map((v, i) => fmt(v).padEnd(colWidths[i])).join(' | ') + ' |'
+      );
+    }
+    this._lines = lines;
+
     const top =
       LiteGraph.NODE_TITLE_HEIGHT +
       LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
     const lineH = 14;
-    this.size[1] = top + lineH * Math.min(out.length, 10);
+    this.size[1] = top + lineH * lines.length;
     this.setDirtyCanvas(true, true);
     this.setOutputData(0, out);
   } catch (err) {
@@ -115,7 +140,7 @@ DescribeTableNode.prototype.onExecute = async function() {
   }
 };
 DescribeTableNode.prototype.onDrawForeground = function(ctx) {
-  if (!this._stats) return;
+  if (!this._lines) return;
   const top =
     LiteGraph.NODE_TITLE_HEIGHT +
     LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
@@ -124,14 +149,18 @@ DescribeTableNode.prototype.onDrawForeground = function(ctx) {
   ctx.font = '12px monospace';
   ctx.fillStyle = '#fff';
   let y = top + lineH;
-  for (const row of this._stats.slice(0, 10)) {
-    const text = Object.entries(row)
-      .map(([k, v]) => `${k}: ${typeof v === 'number' ? v.toFixed(2) : v}`)
-      .join(' ');
-    ctx.fillText(text, 4, y);
+  let maxW = 0;
+  for (const line of this._lines) {
+    ctx.fillText(line, 4, y);
+    maxW = Math.max(maxW, ctx.measureText(line).width);
     y += lineH;
   }
   ctx.restore();
+  const desiredW = Math.max(120, maxW + 8);
+  if (this.size[0] !== desiredW) {
+    this.size[0] = desiredW;
+    this.setDirtyCanvas(true, true);
+  }
 };
 registerNode('data/describe', DescribeTableNode);
 
