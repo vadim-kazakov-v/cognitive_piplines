@@ -5,22 +5,22 @@ function enableInteraction(node) {
     const header = LiteGraph.NODE_TITLE_HEIGHT;
     const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
     const limit = header + widgets;
-    const localY = e.canvasy - this.pos[1];
+    const localY = e.canvasY - this.pos[1];
     if (localY < limit) {
       // allow dragging the node itself from the title or widget area
       // by letting LiteGraph handle the event
       return false;
     }
     this._dragging = true;
-    this._last = [e.canvasx, e.canvasy];
+    this._last = [e.canvasX, e.canvasY];
     this.captureInput(true);
     return true;
   };
   node.onMouseMove = function(e) {
     if (this._dragging) {
-      this._offset[0] += e.canvasx - this._last[0];
-      this._offset[1] += e.canvasy - this._last[1];
-      this._last = [e.canvasx, e.canvasy];
+      this._offset[0] += e.canvasX - this._last[0];
+      this._offset[1] += e.canvasY - this._last[1];
+      this._last = [e.canvasX, e.canvasY];
       this.setDirtyCanvas(true, true);
       return true;
     }
@@ -34,8 +34,8 @@ function enableInteraction(node) {
   node.onMouseWheel = function(e) {
     const delta = e.wheelDeltaY ? e.wheelDeltaY : -e.deltaY;
     const scale = delta > 0 ? 1.1 : 0.9;
-    const x = e.canvasx - this.pos[0] - this._offset[0];
-    const y = e.canvasy - this.pos[1] - this._offset[1];
+    const x = e.canvasX - this.pos[0] - this._offset[0];
+    const y = e.canvasY - this.pos[1] - this._offset[1];
     this._offset[0] -= x * (scale - 1);
     this._offset[1] -= y * (scale - 1);
     this._zoom *= scale;
