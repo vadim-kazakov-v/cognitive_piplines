@@ -57,14 +57,22 @@ def tsne(matrix: Matrix) -> list[list[float]]:
     params = matrix.params or {}
     try:
         data = np.asarray(matrix.data, dtype=float)
-    except ValueError as exc:
+    except (ValueError, TypeError) as exc:
+        # surface invalid numeric inputs as 400 errors instead of crashing
         raise HTTPException(status_code=400, detail=str(exc))
-    n_samples = data.shape[0]
 
+    if data.ndim != 2:
+        raise HTTPException(status_code=400, detail="Input must be a 2D array")
+
+    n_samples = data.shape[0]
     if n_samples < 2:
+        # t-SNE requires at least two samples; return a trivial embedding
         return [[0.0, 0.0] for _ in range(n_samples)]
 
-    params["perplexity"] = min(params.get("perplexity", 30), n_samples - 1)
+    # ensure perplexity is valid for the number of samples
+    perplexity = min(float(params.get("perplexity", 30)), n_samples - 1)
+    params["perplexity"] = perplexity
+
     result = TSNE(n_components=2, **params).fit_transform(data)
     return result.tolist()
 
