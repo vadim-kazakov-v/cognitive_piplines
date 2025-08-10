@@ -272,6 +272,7 @@
         const origDraw = node.onDrawForeground;
         node.onDrawForeground = function(ctx) {
           if (origDraw) origDraw.call(this, ctx);
+          if (!this.selected) return;
           let y = 20;
           ctx.fillStyle = '#000';
           ctx.font = '12px sans-serif';
