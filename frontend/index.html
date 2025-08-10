@@ -81,6 +81,8 @@
       <option value="vertical">Vertical</option>
     </select>
     <button id="layout-btn">Auto Layout</button>
+    <h3>Presets</h3>
+    <div id="preset-list"></div>
     <input id="file-input" type="file" accept="application/json" style="display:none" />
     <input id="node-search" placeholder="Search nodes" />
     <div id="node-list"></div>
@@ -284,7 +286,7 @@
       }
     };
 
-    function defaultPipeline() {
+    function presetSimpleUMAP() {
       const titanic = LiteGraph.createNode('data/titanic');
       titanic.pos = [50, 150];
       const umap = LiteGraph.createNode('ml/umap');
@@ -301,6 +303,147 @@
       umap.connect(0, scatter, 0);
       scatter.connect(0, view, 0);
     }
+
+    function presetUmapDbscanPlot() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const select = LiteGraph.createNode('transform/select');
+      select.pos = [250, 150];
+      const umap = LiteGraph.createNode('ml/umap');
+      umap.pos = [450, 150];
+      const scatter = LiteGraph.createNode('viz/scatter2d');
+      scatter.pos = [650, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [850, 150];
+      const dbscan = LiteGraph.createNode('ml/dbscan');
+      dbscan.pos = [450, 350];
+      const log = LiteGraph.createNode('util/log');
+      log.pos = [650, 350];
+      graph.add(titanic);
+      graph.add(select);
+      graph.add(umap);
+      graph.add(scatter);
+      graph.add(view);
+      graph.add(dbscan);
+      graph.add(log);
+      titanic.connect(0, select, 0);
+      select.connect(1, umap, 0);
+      umap.connect(0, scatter, 0);
+      scatter.connect(0, view, 0);
+      umap.connect(0, dbscan, 0);
+      dbscan.connect(0, log, 0);
+    }
+
+    function presetHistogram() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const select = LiteGraph.createNode('transform/select');
+      select.pos = [250, 150];
+      select.properties.fields = ['Fare'];
+      const bar = LiteGraph.createNode('viz/bar');
+      bar.pos = [450, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [650, 150];
+      graph.add(titanic);
+      graph.add(select);
+      graph.add(bar);
+      graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(1, bar, 0);
+      bar.connect(0, view, 0);
+    }
+
+    function presetPython() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const select = LiteGraph.createNode('transform/select');
+      select.pos = [250, 150];
+      select.properties.field = 'Fare';
+      const py = LiteGraph.createNode('util/python');
+      py.pos = [450, 150];
+      py.properties.code = "[{'double': v*2} for v in data]";
+      const table = LiteGraph.createNode('viz/table');
+      table.pos = [650, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [850, 150];
+      graph.add(titanic);
+      graph.add(select);
+      graph.add(py);
+      graph.add(table);
+      graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(0, py, 0);
+      py.connect(0, table, 0);
+      table.connect(0, view, 0);
+    }
+
+    function presetTsne() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const select = LiteGraph.createNode('transform/select');
+      select.pos = [250, 150];
+      select.properties.fields = ['Fare', 'Age'];
+      const tsne = LiteGraph.createNode('ml/tsne');
+      tsne.pos = [450, 150];
+      const scatter = LiteGraph.createNode('viz/scatter2d');
+      scatter.pos = [650, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [850, 150];
+      graph.add(titanic);
+      graph.add(select);
+      graph.add(tsne);
+      graph.add(scatter);
+      graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(1, tsne, 0);
+      tsne.connect(0, scatter, 0);
+      scatter.connect(0, view, 0);
+    }
+
+    function presetUmap3D() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const select = LiteGraph.createNode('transform/select');
+      select.pos = [250, 150];
+      select.properties.fields = ['Fare', 'Age', 'Pclass'];
+      const umap = LiteGraph.createNode('ml/umap');
+      umap.pos = [450, 150];
+      umap.properties.n_components = 3;
+      const scatter = LiteGraph.createNode('viz/scatter3d');
+      scatter.pos = [650, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [850, 150];
+      graph.add(titanic);
+      graph.add(select);
+      graph.add(umap);
+      graph.add(scatter);
+      graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(1, umap, 0);
+      umap.connect(0, scatter, 0);
+      scatter.connect(0, view, 0);
+    }
+
+    const presets = [
+      { name: 'Simple UMAP', fn: presetSimpleUMAP },
+      { name: 'UMAP + DBSCAN', fn: presetUmapDbscanPlot },
+      { name: 'Histogram', fn: presetHistogram },
+      { name: 'Python', fn: presetPython },
+      { name: 't-SNE', fn: presetTsne },
+      { name: 'UMAP 3D', fn: presetUmap3D }
+    ];
+
+    const presetList = document.getElementById('preset-list');
+    presets.forEach(p => {
+      const btn = document.createElement('button');
+      btn.textContent = p.name;
+      btn.addEventListener('click', () => {
+        graph.clear();
+        p.fn();
+        autoLayout();
+      });
+      presetList.appendChild(btn);
+    });
   </script>
   <script src="nodes/data.js"></script>
   <script src="nodes/transform.js"></script>
@@ -309,6 +452,6 @@
   <script src="nodes/util.js"></script>
   <script src="nodes/ml.js"></script>
   <script src="nodes/python.js"></script>
-  <script>defaultPipeline(); autoLayout(); graph.start();</script>
+  <script>presetSimpleUMAP(); autoLayout(); graph.start();</script>
 </body>
 </html>
