@@ -73,6 +73,7 @@
 <body>
   <div id="sidebar" class="glass">
     <button id="run-btn">Run</button>
+    <button id="step-btn">Step</button>
     <button id="stop-btn">Stop</button>
     <button id="save-flow">Save Flow</button>
     <button id="load-flow">Load Flow</button>
@@ -182,6 +183,9 @@
 
     document.getElementById('run-btn').addEventListener('click', () => {
       graph.start();
+    });
+    document.getElementById('step-btn').addEventListener('click', () => {
+      graph.runStep(1);
     });
     document.getElementById('stop-btn').addEventListener('click', () => {
       graph.stop();
