@@ -412,6 +412,67 @@ HistogramNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/hist', HistogramNode);
 
+function HeatmapNode() {
+  this.addInput('data', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    HeatmapNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'heatmap.png';
+    a.click();
+  }, { width: 30 });
+}
+HeatmapNode.title = 'Heatmap';
+HeatmapNode.icon = '🌡️';
+HeatmapNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (!data) return;
+  this._values = data;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, HeatmapNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+HeatmapNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._values) return;
+  const rows = this._values.length;
+  const cols = Array.isArray(this._values[0]) ? this._values[0].length : 0;
+  if (!rows || !cols) return;
+  const flat = this._values.flat();
+  const min = Math.min(...flat);
+  const max = Math.max(...flat);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const cellW = w / cols;
+  const cellH = h / rows;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const v = this._values[r][c];
+      const t = (v - min) / ((max - min) || 1);
+      const hue = (1 - t) * 240;
+      ctx.fillStyle = `hsl(${hue},100%,50%)`;
+      ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+    }
+  }
+  ctx.restore();
+};
+registerNode('viz/heatmap', HeatmapNode);
+
 function drawTableView(ctx, data, props, w, h, state) {
   const headerH = 18;
   const paginationH = 20;
