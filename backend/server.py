@@ -3,7 +3,7 @@ from typing import Any, List
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -74,7 +74,10 @@ def umap(matrix: Matrix) -> list[list[float]]:
     import umap
 
     params = matrix.params or {}
-    data = np.asarray(matrix.data, dtype=float)
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     n_samples = data.shape[0]
 
     if n_samples < 3:
