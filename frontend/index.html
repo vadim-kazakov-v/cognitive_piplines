@@ -153,10 +153,11 @@
     document.getElementById('stop-btn').addEventListener('click', () => {
       graph.stop();
     });
-    document.getElementById('layout-btn').addEventListener('click', () => {
+    function autoLayout() {
       const mode = document.getElementById('layout-mode').value;
       graph.arrange(100, mode === 'vertical' ? LiteGraph.VERTICAL_LAYOUT : undefined);
-    });
+    }
+    document.getElementById('layout-btn').addEventListener('click', autoLayout);
     document.getElementById('save-flow').addEventListener('click', () => {
       const data = JSON.stringify(graph.serialize(), null, 2);
       const blob = new Blob([data], {type:'application/json'});
@@ -272,6 +273,6 @@
   <script src="nodes/util.js"></script>
   <script src="nodes/ml.js"></script>
   <script src="nodes/python.js"></script>
-  <script>defaultPipeline();</script>
+  <script>defaultPipeline(); autoLayout();</script>
 </body>
 </html>
