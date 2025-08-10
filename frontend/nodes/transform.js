@@ -77,7 +77,7 @@ registerNode('transform/select', SelectFieldNode);
 
 function OneHotNode() {
   this.addInput('data', 'array');
-  this.addOutput('matrix', 'array');
+  this.addOutput('data', 'array');
   this.addProperty('field', 'Sex');
   this.color = '#222';
   this.bgcolor = '#444';
@@ -90,13 +90,12 @@ OneHotNode.prototype.onExecute = function() {
   if (!data) return;
   const field = this.properties.field;
   const categories = Array.from(new Set(data.map(r => r[field])));
-  const map = {};
-  categories.forEach((c, i) => (map[c] = i));
-  const result = data.map(r => {
-    const vec = Array(categories.length).fill(0);
-    const idx = map[r[field]];
-    if (idx !== undefined) vec[idx] = 1;
-    return vec;
+  const result = data.map(row => {
+    const obj = {};
+    categories.forEach(cat => {
+      obj[`${field}_${cat}`] = row[field] === cat ? 1 : 0;
+    });
+    return obj;
   });
   this.setOutputData(0, result);
 };
