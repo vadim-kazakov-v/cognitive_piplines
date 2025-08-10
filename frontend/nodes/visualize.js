@@ -57,6 +57,7 @@ registerNode('viz/bar', BarChartNode);
 function Scatter2DNode() {
   this.addInput('points', 'array');
   this.size = [200, 150];
+  this.resizable = true;
   this._zoom = 1;
   this._offset = [0, 0];
   this.color = '#222';

@@ -5,10 +5,13 @@ function enableInteraction(node) {
     const header = LiteGraph.NODE_TITLE_HEIGHT;
     const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
     const limit = header + widgets;
+    const localX = e.canvasX - this.pos[0];
     const localY = e.canvasY - this.pos[1];
-    if (localY < limit) {
+    const inResizeCorner =
+      localX > this.size[0] - 10 && localY > this.size[1] - 10;
+    if (localY < limit || inResizeCorner) {
       // allow dragging the node itself from the title or widget area
-      // by letting LiteGraph handle the event
+      // or resizing from the bottom-right corner by letting LiteGraph handle the event
       return false;
     }
     this._dragging = true;
