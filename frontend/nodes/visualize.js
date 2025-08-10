@@ -1106,9 +1106,10 @@ SankeyNode.prototype.onDrawBackground = function(ctx) {
     ctx.bezierCurveTo((s.x + t.x) / 2, s.y, (s.x + t.x) / 2, t.y, t.x - 20, t.y);
     ctx.stroke();
   });
-  nodes.forEach((name, i) => {
+  nodes.forEach((node, i) => {
     const p = positions[i];
     if (!p) return;
+    const name = typeof node === 'object' ? node.name : node;
     ctx.fillStyle = '#888';
     ctx.fillRect(p.x - 10, p.y - 5, 20, 10);
     ctx.fillStyle = '#fff';

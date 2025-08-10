@@ -538,21 +538,27 @@ result = Counter(data)`;
       select.properties.fields = ['Pclass', 'Survived'];
       const py = LiteGraph.createNode('util/python');
       py.pos = [450, 150];
-      py.properties.code = `from collections import Counter
+      py.properties.code = `from collections import defaultdict
+
 nodes = []
 index = {}
-def idx(name):
+
+def get_index(name):
     if name not in index:
         index[name] = len(nodes)
-        nodes.append(name)
+        nodes.append({'name': name})
     return index[name]
-counts = Counter()
-for r in data:
-    s = idx(f"Pclass {r['Pclass']}")
-    t = idx(f"Survived {r['Survived']}")
-    counts[(s, t)] += 1
-links = [{'source': s, 'target': t, 'value': v} for (s, t), v in counts.items()]
-result = {'nodes': nodes, 'links': links}`;
+
+links = defaultdict(int)
+for row in data:
+    s = get_index(f"Pclass {row['Pclass']}")
+    t = get_index(f"Survived {row['Survived']}")
+    links[(s, t)] += 1
+
+result = {
+    'nodes': nodes,
+    'links': [{'source': s, 'target': t, 'value': v} for (s, t), v in links.items()]
+}`;
       const sankey = LiteGraph.createNode('viz/sankey');
       sankey.pos = [650, 150];
       const view = LiteGraph.createNode('viz/view');
