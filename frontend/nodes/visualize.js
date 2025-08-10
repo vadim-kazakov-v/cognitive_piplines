@@ -34,6 +34,64 @@ function hexToRgb(hex) {
   return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
 }
 
+function setupFieldSelector(node) {
+  node.addProperty('field', '');
+  node._fieldWidget = node.addWidget(
+    'combo',
+    'field',
+    node.properties.field,
+    v => (node.properties.field = v),
+    { values: [] }
+  );
+  node.updateFieldSelector = function(data) {
+    if (!Array.isArray(data) || !data.length || typeof data[0] !== 'object') return;
+    const cols = Object.keys(data[0]).filter(k => typeof data[0][k] === 'number');
+    if (this._columns && cols.join(',') === this._columns.join(',')) return;
+    this._columns = cols;
+    this._fieldWidget.options.values = cols;
+    if (!cols.includes(this.properties.field)) {
+      this.properties.field = cols[0] || '';
+      this._fieldWidget.value = this.properties.field;
+    }
+  };
+}
+
+function setupLabelValueSelectors(node) {
+  node.addProperty('label', '');
+  node.addProperty('value', '');
+  node._labelWidget = node.addWidget(
+    'combo',
+    'label',
+    node.properties.label,
+    v => (node.properties.label = v),
+    { values: [] }
+  );
+  node._valueWidget = node.addWidget(
+    'combo',
+    'value',
+    node.properties.value,
+    v => (node.properties.value = v),
+    { values: [] }
+  );
+  node.updateFieldSelectors = function(data) {
+    if (!Array.isArray(data) || !data.length || typeof data[0] !== 'object') return;
+    const cols = Object.keys(data[0]);
+    if (this._columns && cols.join(',') === this._columns.join(',')) return;
+    this._columns = cols;
+    this._labelWidget.options.values = cols;
+    const numeric = cols.filter(k => typeof data[0][k] === 'number');
+    this._valueWidget.options.values = numeric;
+    if (!cols.includes(this.properties.label)) {
+      this.properties.label = cols[0] || '';
+      this._labelWidget.value = this.properties.label;
+    }
+    if (!numeric.includes(this.properties.value)) {
+      this.properties.value = numeric[0] || '';
+      this._valueWidget.value = this.properties.value;
+    }
+  };
+}
+
 function BarChartNode() {
   this.addInput('data', 'array');
   this.addOutput('image', 'string');
@@ -42,6 +100,7 @@ function BarChartNode() {
   this._offset = [0, 0];
   this.color = '#222';
   this.bgcolor = '#444';
+  setupFieldSelector(this);
   enableInteraction(this);
   this.addWidget('button', '💾', null, () => {
     const canvas = document.createElement('canvas');
@@ -60,7 +119,18 @@ BarChartNode.icon = '📊';
 BarChartNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
-  this._values = data.map(r => r.Fare || 0);
+  this.updateFieldSelector(data);
+  let vals;
+  if (Array.isArray(data)) {
+    if (typeof data[0] === 'object') {
+      const f = this.properties.field;
+      if (!f) return;
+      vals = data.map(r => Number(r[f] || 0));
+    } else {
+      vals = data.map(v => Number(v));
+    }
+  }
+  this._values = vals;
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, BarChartNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
@@ -342,6 +412,7 @@ function LineChartNode() {
   this._offset = [0, 0];
   this.color = '#222';
   this.bgcolor = '#444';
+  setupFieldSelector(this);
   enableInteraction(this);
   this.addWidget('button', '💾', null, () => {
     const canvas = document.createElement('canvas');
@@ -360,7 +431,18 @@ LineChartNode.icon = '📉';
 LineChartNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
-  this._values = data;
+  this.updateFieldSelector(data);
+  let vals;
+  if (Array.isArray(data)) {
+    if (typeof data[0] === 'object') {
+      const f = this.properties.field;
+      if (!f) return;
+      vals = data.map(r => Number(r[f] || 0));
+    } else {
+      vals = data.map(v => Number(v));
+    }
+  }
+  this._values = vals;
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, LineChartNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
@@ -397,6 +479,7 @@ function HistogramNode() {
   this._offset = [0, 0];
   this.color = '#222';
   this.bgcolor = '#444';
+  setupFieldSelector(this);
   enableInteraction(this);
   this.addWidget('button', '💾', null, () => {
     const canvas = document.createElement('canvas');
@@ -415,7 +498,18 @@ HistogramNode.icon = '📚';
 HistogramNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
-  this._values = data;
+  this.updateFieldSelector(data);
+  let vals;
+  if (Array.isArray(data)) {
+    if (typeof data[0] === 'object') {
+      const f = this.properties.field;
+      if (!f) return;
+      vals = data.map(r => Number(r[f] || 0));
+    } else {
+      vals = data.map(v => Number(v));
+    }
+  }
+  this._values = vals;
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, HistogramNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
@@ -980,6 +1074,7 @@ function PieChartNode() {
   this._offset = [0, 0];
   this.color = '#222';
   this.bgcolor = '#444';
+  setupLabelValueSelectors(this);
   enableInteraction(this);
   this.addWidget('button', '💾', null, () => {
     const canvas = document.createElement('canvas');
@@ -998,22 +1093,31 @@ PieChartNode.icon = '🥧';
 PieChartNode.prototype.onExecute = function() {
   const d = this.getInputData(0);
   if (!d) return;
-  this._data = d;
+  this.updateFieldSelectors(d);
+  let entries;
+  if (Array.isArray(d)) {
+    if (typeof d[0] === 'object' && this.properties.label && this.properties.value) {
+      entries = d.map(r => [String(r[this.properties.label]), Number(r[this.properties.value] || 0)]);
+    } else {
+      entries = d.map((v, i) => [String(i), Number(v)]);
+    }
+  } else if (d && typeof d === 'object') {
+    entries = Object.entries(d);
+  }
+  this._entries = entries;
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, PieChartNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
 };
 PieChartNode.prototype.onDrawBackground = function(ctx) {
-  if (!this._data) return;
+  if (!this._entries) return;
   const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   const cx = w / 2;
   const cy = h / 2;
   const r = Math.min(w, h) / 2 - 4;
-  const entries = Array.isArray(this._data)
-    ? this._data.map((v, i) => [String(i), Number(v)])
-    : Object.entries(this._data);
+  const entries = this._entries;
   const total = entries.reduce((a, [, v]) => a + (Number(v) || 0), 0);
   ctx.save();
   ctx.translate(this._offset[0], this._offset[1] + top);
