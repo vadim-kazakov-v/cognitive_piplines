@@ -230,15 +230,11 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   const minZ = Math.min(...zs), maxZ = Math.max(...zs);
-  const data = new Float32Array(pts.length * 3);
   const rx = this._rot[0], ry = this._rot[1], scale = this._zoom;
   const cosX = Math.cos(rx), sinX = Math.sin(rx);
   const cosY = Math.cos(ry), sinY = Math.sin(ry);
-  for (let i = 0; i < pts.length; i++) {
-    const p = pts[i];
-    const px = Array.isArray(p) ? p[0] : p.x;
-    const py = Array.isArray(p) ? p[1] : p.y;
-    const pz = Array.isArray(p) ? p[2] : p.z;
+
+  function transform(px, py, pz) {
     let x = (px - minX) / ((maxX - minX) || 1) * 2 - 1;
     let y = (py - minY) / ((maxY - minY) || 1) * 2 - 1;
     let z = (pz - minZ) / ((maxZ - minZ) || 1) * 2 - 1;
@@ -249,19 +245,54 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
     x2 *= scale;
     y1 *= scale;
     const depth = z2 + 3;
-    data[i * 3] = x2 / depth;
-    data[i * 3 + 1] = y1 / depth;
+    return [x2 / depth, y1 / depth];
+  }
+
+  const data = new Float32Array(pts.length * 3);
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    const px = Array.isArray(p) ? p[0] : p.x;
+    const py = Array.isArray(p) ? p[1] : p.y;
+    const pz = Array.isArray(p) ? p[2] : p.z;
+    const t = transform(px, py, pz);
+    data[i * 3] = t[0];
+    data[i * 3 + 1] = t[1];
     data[i * 3 + 2] = 0;
   }
+
+  gl.useProgram(this._program);
   gl.bindBuffer(gl.ARRAY_BUFFER, this._buffer);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(this._posLoc);
   gl.vertexAttribPointer(this._posLoc, 3, gl.FLOAT, false, 0, 0);
   gl.drawArrays(gl.POINTS, 0, pts.length);
+
   this._img = this._glcanvas.toDataURL();
+
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, cz = (minZ + maxZ) / 2;
+  const axisPoints = [
+    transform(minX, cy, cz), transform(maxX, cy, cz),
+    transform(cx, minY, cz), transform(cx, maxY, cz),
+    transform(cx, cy, minZ), transform(cx, cy, maxZ)
+  ];
+
   ctx.save();
   ctx.translate(0, top);
   ctx.drawImage(this._glcanvas, 0, 0);
+  const axisColors = ['#f55', '#5f5', '#55f'];
+  for (let i = 0; i < axisPoints.length; i += 2) {
+    const a = axisPoints[i];
+    const b = axisPoints[i + 1];
+    const ax = (a[0] * 0.5 + 0.5) * w;
+    const ay = (1 - (a[1] * 0.5 + 0.5)) * h;
+    const bx = (b[0] * 0.5 + 0.5) * w;
+    const by = (1 - (b[1] * 0.5 + 0.5)) * h;
+    ctx.strokeStyle = axisColors[i / 2];
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(bx, by);
+    ctx.stroke();
+  }
   ctx.restore();
 };
 registerNode('viz/scatter3d', Scatter3DNode);
