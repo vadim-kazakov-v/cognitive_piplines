@@ -48,7 +48,7 @@ function enableInteraction(node) {
 }
 
 function VisualizerNode() {
-  this.addInput('data', 'array');
+  this.addInput('image', 'string');
   this.size = [200, 150];
   this.color = '#222';
   this.bgcolor = '#444';
@@ -59,19 +59,22 @@ VisualizerNode.icon = '\uD83D\uDDBC\uFE0F';
 VisualizerNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
-  this._data = data;
-  this.setDirtyCanvas(true, true);
+  if (data !== this._current) {
+    this._current = data;
+    this._img = new Image();
+    this._img.onload = () => this.setDirtyCanvas(true, true);
+    this._img.src = data;
+  }
 };
 VisualizerNode.prototype.onDrawBackground = function(ctx) {
-  if (!this._data) return;
+  if (!this._img) return;
   const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
   ctx.save();
   ctx.translate(this._offset[0], this._offset[1] + top);
   ctx.scale(this._zoom, this._zoom);
-  ctx.fillStyle = '#fff';
-  const text = typeof this._data === 'object' ? JSON.stringify(this._data, null, 2) : String(this._data);
-  const lines = text.split('\n');
-  lines.forEach((line, i) => ctx.fillText(line, 0, 10 + i * 14));
+  ctx.drawImage(this._img, 0, 0, w, h);
   ctx.restore();
 };
-registerNode('viz/raw', VisualizerNode);
+registerNode('viz/view', VisualizerNode);
