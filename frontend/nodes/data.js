@@ -26,19 +26,51 @@ registerNode('data/titanic', TitanicNode);
 function RandomDataNode() {
   this.addOutput('data', 'array');
   this.addProperty('count', 10);
+  this.addProperty('columns', 2);
   this.addProperty('min', 0);
   this.addProperty('max', 1);
+  this.addProperty('integer', false);
   this.color = '#222';
   this.bgcolor = '#444';
-  this.addWidget('slider', 'count', this.properties.count, v => (this.properties.count = v), { min: 1, max: 100, step: 1, precision: 0 });
-  this.addWidget('slider', 'min', this.properties.min, v => (this.properties.min = v), { min: -100, max: 100, step: 1 });
-  this.addWidget('slider', 'max', this.properties.max, v => (this.properties.max = v), { min: -100, max: 100, step: 1 });
+  this.addWidget('slider', 'count', this.properties.count, v => (this.properties.count = v), {
+    min: 1,
+    max: 100,
+    step: 1,
+    precision: 0,
+  });
+  this.addWidget('slider', 'columns', this.properties.columns, v => (this.properties.columns = v), {
+    min: 1,
+    max: 10,
+    step: 1,
+    precision: 0,
+  });
+  this.addWidget('slider', 'min', this.properties.min, v => (this.properties.min = v), {
+    min: -100,
+    max: 100,
+    step: 1,
+  });
+  this.addWidget('slider', 'max', this.properties.max, v => (this.properties.max = v), {
+    min: -100,
+    max: 100,
+    step: 1,
+  });
+  this.addWidget('toggle', 'integer', this.properties.integer, v => (this.properties.integer = v));
 }
 RandomDataNode.title = 'Random Data';
 RandomDataNode.icon = '🎲';
 RandomDataNode.prototype.onExecute = function() {
-  const { count, min, max } = this.properties;
-  const data = Array.from({ length: Math.round(count) }, () => Math.random() * (max - min) + min);
+  const { count, columns, min, max, integer } = this.properties;
+  const rows = Math.max(0, Math.round(count));
+  const cols = Math.max(1, Math.round(columns));
+  const data = Array.from({ length: rows }, () => {
+    const obj = {};
+    for (let i = 0; i < cols; i++) {
+      let val = Math.random() * (max - min) + min;
+      if (integer) val = Math.round(val);
+      obj[`col${i + 1}`] = val;
+    }
+    return obj;
+  });
   this.setOutputData(0, data);
 };
 registerNode('data/random', RandomDataNode);
