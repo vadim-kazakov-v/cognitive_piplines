@@ -5,8 +5,24 @@ function drawPlotArea(ctx, w, h) {
   ctx.strokeRect(0, 0, w, h);
 }
 
+function captureNodeImage(node, drawFunc) {
+  const canvas = document.createElement('canvas');
+  canvas.width = node.size[0];
+  canvas.height = node.size[1];
+  const ctx = canvas.getContext('2d');
+  const oldZoom = node._zoom;
+  const oldOffset = node._offset.slice();
+  node._zoom = 1;
+  node._offset = [0, 0];
+  drawFunc.call(node, ctx);
+  node._zoom = oldZoom;
+  node._offset = oldOffset;
+  return canvas.toDataURL();
+}
+
 function BarChartNode() {
   this.addInput('data', 'array');
+  this.addOutput('image', 'string');
   this.size = [200, 150];
   this._zoom = 1;
   this._offset = [0, 0];
@@ -32,6 +48,8 @@ BarChartNode.prototype.onExecute = function() {
   if (!data) return;
   this._values = data.map(r => r.Fare || 0);
   this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, BarChartNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
 };
 BarChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
@@ -56,6 +74,7 @@ registerNode('viz/bar', BarChartNode);
 
 function Scatter2DNode() {
   this.addInput('points', 'array');
+  this.addOutput('image', 'string');
   this.size = [200, 150];
   this.resizable = true;
   this._zoom = 1;
@@ -82,6 +101,8 @@ Scatter2DNode.prototype.onExecute = function() {
   if (!pts) return;
   this._pts = pts;
   this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, Scatter2DNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
 };
 Scatter2DNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
@@ -112,6 +133,7 @@ registerNode('viz/scatter2d', Scatter2DNode);
 
 function LineChartNode() {
   this.addInput('data', 'array');
+  this.addOutput('image', 'string');
   this.size = [200, 150];
   this._zoom = 1;
   this._offset = [0, 0];
@@ -137,6 +159,8 @@ LineChartNode.prototype.onExecute = function() {
   if (!data) return;
   this._values = data;
   this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, LineChartNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
 };
 LineChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
@@ -164,6 +188,7 @@ registerNode('viz/line', LineChartNode);
 
 function HistogramNode() {
   this.addInput('data', 'array');
+  this.addOutput('image', 'string');
   this.size = [200, 150];
   this._zoom = 1;
   this._offset = [0, 0];
@@ -189,6 +214,8 @@ HistogramNode.prototype.onExecute = function() {
   if (!data) return;
   this._values = data;
   this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, HistogramNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
 };
 HistogramNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
@@ -221,6 +248,7 @@ registerNode('viz/hist', HistogramNode);
 
 function TableViewNode() {
   this.addInput('data', 'array');
+  this.addOutput('image', 'string');
   this.size = [300, 200];
   this.resizable = true;
   this.color = '#222';
@@ -266,6 +294,8 @@ TableViewNode.prototype.onExecute = function() {
   if (!data) return;
   this._data = data;
   this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, TableViewNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
 };
 TableViewNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data) return;
