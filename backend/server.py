@@ -142,6 +142,102 @@ def dbscan(matrix: Matrix) -> list[int]:
     return labels.tolist()
 
 
+@app.post("/spectral")
+def spectral(matrix: Matrix) -> list[int]:
+    """Cluster the given data using spectral clustering."""
+
+    from sklearn.cluster import SpectralClustering
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    n_samples = data.shape[0]
+    if n_samples == 0:
+        return []
+
+    n_clusters = int(params.get("n_clusters", 8))
+    n_clusters = min(max(n_clusters, 1), n_samples)
+    params["n_clusters"] = n_clusters
+    labels = SpectralClustering(**params).fit_predict(data)
+    return labels.tolist()
+
+
+@app.post("/kmeans")
+def kmeans(matrix: Matrix) -> dict:
+    """Cluster the given data using K-means."""
+
+    from sklearn.cluster import KMeans
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    n_samples = data.shape[0]
+    if n_samples == 0:
+        return {"labels": [], "centers": []}
+
+    n_clusters = int(params.get("n_clusters", 8))
+    n_clusters = min(max(n_clusters, 1), n_samples)
+    params["n_clusters"] = n_clusters
+    kmeans = KMeans(**params).fit(data)
+    return {
+        "labels": kmeans.labels_.tolist(),
+        "centers": kmeans.cluster_centers_.tolist(),
+    }
+
+
+@app.post("/gmm")
+def gmm(matrix: Matrix) -> dict:
+    """Cluster the data using a Gaussian mixture model."""
+
+    from sklearn.mixture import GaussianMixture
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    n_samples = data.shape[0]
+    if n_samples == 0:
+        return {"labels": [], "means": []}
+
+    n_components = int(params.get("n_components", 1))
+    n_components = min(max(n_components, 1), n_samples)
+    params["n_components"] = n_components
+    model = GaussianMixture(**params).fit(data)
+    labels = model.predict(data).tolist()
+    means = model.means_.tolist()
+    return {"labels": labels, "means": means}
+
+
+@app.post("/pca")
+def pca(matrix: Matrix) -> list[list[float]]:
+    """Compute a PCA embedding for the given data."""
+
+    from sklearn.decomposition import PCA
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if data.size == 0:
+        return []
+
+    n_components = int(params.get("n_components", 2))
+    n_components = min(max(n_components, 1), data.shape[1])
+    params["n_components"] = n_components
+    embedding = PCA(**params).fit_transform(data)
+    return embedding.tolist()
+
+
 @app.post("/python")
 def run_python(req: CodeRequest) -> Any:
     """Execute arbitrary Python code with optional data."""

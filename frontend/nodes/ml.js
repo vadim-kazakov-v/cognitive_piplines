@@ -1,7 +1,9 @@
-function ApiNode(endpoint, title, params) {
+function ApiNode(endpoint, title, params, outputs) {
   this.endpoint = endpoint;
   this.addInput('data', 'array');
-  this.addOutput('result', 'array');
+  this.outputs = [];
+  const outs = outputs && outputs.length ? outputs : ['result'];
+  outs.forEach(name => this.addOutput(name, 'array'));
   this.title = title;
   this.properties = {};
    this.color = '#222';
@@ -68,7 +70,11 @@ ApiNode.prototype.onExecute = async function() {
       body: JSON.stringify(payload),
     });
     const out = await res.json();
-    this.setOutputData(0, out);
+    if (this.outputs.length === 1) {
+      this.setOutputData(0, out);
+    } else {
+      this.outputs.forEach((o, i) => this.setOutputData(i, out[o.name]));
+    }
   } catch (err) {
     console.error(err);
   } finally {
@@ -105,4 +111,45 @@ DbscanNode.title = 'DBSCAN';
 DbscanNode.icon = '🌌';
 DbscanNode.prototype = Object.create(ApiNode.prototype);
 registerNode('ml/dbscan', DbscanNode);
+
+function SpectralNode() {
+  ApiNode.call(this, 'spectral', 'Spectral', {
+    n_clusters: { value: 8, min: 1, max: 50, step: 1 },
+  });
+}
+SpectralNode.title = 'Spectral';
+SpectralNode.icon = '🔮';
+SpectralNode.prototype = Object.create(ApiNode.prototype);
+registerNode('ml/spectral', SpectralNode);
+
+function KmeansNode() {
+  ApiNode.call(this, 'kmeans', 'KMeans', {
+    n_clusters: { value: 8, min: 1, max: 50, step: 1 },
+    n_init: { value: 10, min: 1, max: 50, step: 1 },
+  }, ['labels', 'centers']);
+}
+KmeansNode.title = 'KMeans';
+KmeansNode.icon = '🎯';
+KmeansNode.prototype = Object.create(ApiNode.prototype);
+registerNode('ml/kmeans', KmeansNode);
+
+function GmmNode() {
+  ApiNode.call(this, 'gmm', 'GMM', {
+    n_components: { value: 2, min: 1, max: 10, step: 1 },
+  }, ['labels', 'means']);
+}
+GmmNode.title = 'GMM';
+GmmNode.icon = '🍥';
+GmmNode.prototype = Object.create(ApiNode.prototype);
+registerNode('ml/gmm', GmmNode);
+
+function PcaNode() {
+  ApiNode.call(this, 'pca', 'PCA', {
+    n_components: { value: 2, min: 1, max: 3, step: 1 },
+  });
+}
+PcaNode.title = 'PCA';
+PcaNode.icon = '🧮';
+PcaNode.prototype = Object.create(ApiNode.prototype);
+registerNode('ml/pca', PcaNode);
 
