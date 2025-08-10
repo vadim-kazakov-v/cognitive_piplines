@@ -1195,3 +1195,158 @@ ViolinChartNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/violin', ViolinChartNode);
 
+function GraphVizNode() {
+  this.addInput('graph', 'object');
+  this.addOutput('image', 'string');
+  this.size = [300, 200];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    GraphVizNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'graph.png';
+    a.click();
+  }, { width: 30 });
+}
+GraphVizNode.title = 'Graph';
+GraphVizNode.icon = '🕸️';
+GraphVizNode.prototype.onExecute = function() {
+  const g = this.getInputData(0);
+  if (!g) return;
+  this._data = g;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, GraphVizNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+GraphVizNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._data) return;
+  const nodes = this._data.nodes || [];
+  const links = this._data.links || [];
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  const n = nodes.length;
+  const positions = nodes.map((_, i) => {
+    const angle = (i / n) * Math.PI * 2;
+    return {
+      x: (Math.cos(angle) * 0.4 + 0.5) * w,
+      y: (Math.sin(angle) * 0.4 + 0.5) * h,
+    };
+  });
+  ctx.strokeStyle = '#888';
+  links.forEach(l => {
+    const s = positions[l.source];
+    const t = positions[l.target];
+    if (!s || !t) return;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(t.x, t.y);
+    ctx.stroke();
+  });
+  positions.forEach((p, i) => {
+    ctx.fillStyle = COLOR_PALETTE[i % COLOR_PALETTE.length];
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px sans-serif';
+    const label = String(nodes[i]);
+    ctx.fillText(label, p.x - ctx.measureText(label).width / 2, p.y - 14);
+  });
+  ctx.restore();
+};
+registerNode('viz/graph', GraphVizNode);
+
+function GlyphsNode() {
+  this.addInput('data', 'array');
+  this.addOutput('image', 'string');
+  this.size = [300, 200];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    GlyphsNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'glyphs.png';
+    a.click();
+  }, { width: 30 });
+}
+GlyphsNode.title = 'Glyphs';
+GlyphsNode.icon = '⭐';
+GlyphsNode.prototype.onExecute = function() {
+  const d = this.getInputData(0);
+  if (!Array.isArray(d) || !d.length) return;
+  this._data = d;
+  const dims = d[0].length || 0;
+  const mins = Array(dims).fill(Infinity);
+  const maxs = Array(dims).fill(-Infinity);
+  d.forEach(row => {
+    row.forEach((v, i) => {
+      if (v < mins[i]) mins[i] = v;
+      if (v > maxs[i]) maxs[i] = v;
+    });
+  });
+  this._mins = mins;
+  this._maxs = maxs;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, GlyphsNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+GlyphsNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._data) return;
+  const data = this._data;
+  const mins = this._mins;
+  const maxs = this._maxs;
+  const dims = mins.length;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  const cols = Math.ceil(Math.sqrt(data.length));
+  const rows = Math.ceil(data.length / cols);
+  const cellW = w / cols;
+  const cellH = h / rows;
+  data.forEach((row, idx) => {
+    const cx = (idx % cols) * cellW + cellW / 2;
+    const cy = Math.floor(idx / cols) * cellH + cellH / 2;
+    const radius = Math.min(cellW, cellH) / 2 - 4;
+    ctx.beginPath();
+    for (let i = 0; i < dims; i++) {
+      const angle = (i / dims) * Math.PI * 2 - Math.PI / 2;
+      const norm = (row[i] - mins[i]) / ((maxs[i] - mins[i]) || 1);
+      const r = radius * norm;
+      const x = cx + Math.cos(angle) * r;
+      const y = cy + Math.sin(angle) * r;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = '#7af';
+    ctx.stroke();
+  });
+  ctx.restore();
+};
+registerNode('viz/glyphs', GlyphsNode);
+

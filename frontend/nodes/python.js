@@ -1,6 +1,7 @@
 function PythonNode() {
   this.addInput('data', 'array');
-  this.addOutput('result', 'array');
+  // allow returning any datatype from Python scripts
+  this.addOutput('result', '*');
   this.addProperty('code', 'lambda x: x');
   this.color = '#222';
   this.bgcolor = '#444';
@@ -30,16 +31,22 @@ PythonNode.prototype.onDrawForeground = function(ctx) {
   const code = this.properties.code;
   if (!code) return;
   const keywords = ['def', 'return', 'lambda', 'import'];
-  let x = 4;
-  let y = this.size[1] - 20;
+  const lines = code.split('\n');
   ctx.font = '12px monospace';
-  const tokens = code.split(/(\b)/);
-  for (const t of tokens) {
-    if (keywords.includes(t)) ctx.fillStyle = '#7ff';
-    else if (/^[0-9]+$/.test(t)) ctx.fillStyle = '#f7f';
-    else ctx.fillStyle = '#fff';
-    ctx.fillText(t, x, y);
-    x += ctx.measureText(t).width;
+  let y = this.size[1] - 8;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    let x = 4;
+    const tokens = line.split(/(\b)/);
+    for (const t of tokens) {
+      if (keywords.includes(t)) ctx.fillStyle = '#7ff';
+      else if (/^[0-9]+$/.test(t)) ctx.fillStyle = '#f7f';
+      else ctx.fillStyle = '#fff';
+      ctx.fillText(t, x, y);
+      x += ctx.measureText(t).width;
+    }
+    y -= 14;
+    if (y < 0) break;
   }
 };
 registerNode('util/python', PythonNode);
