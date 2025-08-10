@@ -31,7 +31,7 @@ BarChartNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
   this._values = data.map(r => r.Fare || 0);
-  this.setDirtyCanvas(true);
+  this.setDirtyCanvas(true, true);
 };
 BarChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
@@ -80,7 +80,7 @@ Scatter2DNode.prototype.onExecute = function() {
   const pts = this.getInputData(0);
   if (!pts) return;
   this._pts = pts;
-  this.setDirtyCanvas(true);
+  this.setDirtyCanvas(true, true);
 };
 Scatter2DNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
@@ -135,7 +135,7 @@ LineChartNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
   this._values = data;
-  this.setDirtyCanvas(true);
+  this.setDirtyCanvas(true, true);
 };
 LineChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
@@ -187,7 +187,7 @@ HistogramNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
   this._values = data;
-  this.setDirtyCanvas(true);
+  this.setDirtyCanvas(true, true);
 };
 HistogramNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
