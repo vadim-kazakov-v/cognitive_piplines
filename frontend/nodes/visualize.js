@@ -133,6 +133,7 @@ registerNode('viz/scatter2d', Scatter2DNode);
 
 function Scatter3DNode() {
   this.addInput('points', 'array');
+  this.addOutput('image', 'string');
   this.size = [200, 150];
   this.resizable = true;
   this.color = '#222';
@@ -189,6 +190,7 @@ Scatter3DNode.prototype.onExecute = function() {
   const pts = this.getInputData(0);
   if (!pts) return;
   this._pts = pts;
+  if (this._img) this.setOutputData(0, this._img);
   this.setDirtyCanvas(true, true);
 };
 Scatter3DNode.prototype.onDrawBackground = function(ctx) {
@@ -200,7 +202,7 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
     this._glcanvas = document.createElement('canvas');
     this._glcanvas.width = w;
     this._glcanvas.height = h;
-    const gl = this._glcanvas.getContext('webgl');
+    const gl = this._glcanvas.getContext('webgl', { preserveDrawingBuffer: true });
     this._gl = gl;
     const vs = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vs, 'attribute vec3 aPos;void main(){gl_Position=vec4(aPos,1.0);gl_PointSize=4.0;}');
@@ -222,9 +224,9 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
   gl.clearColor(0.133, 0.133, 0.133, 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   const pts = this._pts;
-  const xs = pts.map(p => p[0]);
-  const ys = pts.map(p => p[1]);
-  const zs = pts.map(p => p[2]);
+  const xs = pts.map(p => (Array.isArray(p) ? p[0] : p.x));
+  const ys = pts.map(p => (Array.isArray(p) ? p[1] : p.y));
+  const zs = pts.map(p => (Array.isArray(p) ? p[2] : p.z));
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   const minZ = Math.min(...zs), maxZ = Math.max(...zs);
@@ -234,9 +236,12 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
   const cosY = Math.cos(ry), sinY = Math.sin(ry);
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i];
-    let x = (p[0] - minX) / ((maxX - minX) || 1) * 2 - 1;
-    let y = (p[1] - minY) / ((maxY - minY) || 1) * 2 - 1;
-    let z = (p[2] - minZ) / ((maxZ - minZ) || 1) * 2 - 1;
+    const px = Array.isArray(p) ? p[0] : p.x;
+    const py = Array.isArray(p) ? p[1] : p.y;
+    const pz = Array.isArray(p) ? p[2] : p.z;
+    let x = (px - minX) / ((maxX - minX) || 1) * 2 - 1;
+    let y = (py - minY) / ((maxY - minY) || 1) * 2 - 1;
+    let z = (pz - minZ) / ((maxZ - minZ) || 1) * 2 - 1;
     let y1 = y * cosX - z * sinX;
     let z1 = y * sinX + z * cosX;
     let x2 = x * cosY + z1 * sinY;
@@ -253,6 +258,7 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
   gl.enableVertexAttribArray(this._posLoc);
   gl.vertexAttribPointer(this._posLoc, 3, gl.FLOAT, false, 0, 0);
   gl.drawArrays(gl.POINTS, 0, pts.length);
+  this._img = this._glcanvas.toDataURL();
   ctx.save();
   ctx.translate(0, top);
   ctx.drawImage(this._glcanvas, 0, 0);
