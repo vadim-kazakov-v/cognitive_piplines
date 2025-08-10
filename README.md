@@ -25,6 +25,8 @@ Additional endpoints provide machine learning helpers used by the UI:
 - `/kmeans` – clustering with K‑means
 - `/gmm` – clustering with Gaussian mixture models
 - `/pca` – dimensionality reduction via PCA
+- `/isolation_forest` – anomaly detection with Isolation Forest
+- `/lof` – anomaly detection with Local Outlier Factor
 
 ## Frontend
 
@@ -41,6 +43,9 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Bar Chart**, **Scatter Plot**, and **Scatter3D** – visualize numeric data
 - **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, and **KMeans** – run analytics algorithms on arrays of numbers
 - **Spectral**, **GMM** – additional clustering tools
+- **Isolation Forest**, **Local Outlier Factor** – anomaly detection
+- **Random Series**, **Sine Wave** – generate time-series data
+- **Lissajous** – visualize x/y signals as Lissajous figures
 - **Log** – inspect any data in the developer console
 
 Connect nodes to create analysis pipelines; for instance, link **Titanic Sample → Select Field (Fare) → t‑SNE → Scatter Plot** to see an embedding of fare values.
