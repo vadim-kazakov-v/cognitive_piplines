@@ -74,7 +74,7 @@ def umap(matrix: Matrix) -> list[list[float]]:
     import umap
 
     params = matrix.params or {}
-    data = np.asarray(matrix.data)
+    data = np.asarray(matrix.data, dtype=float)
     n_samples = data.shape[0]
 
     if n_samples < 3:
