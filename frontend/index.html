@@ -338,22 +338,16 @@
       titanic.pos = [50, 150];
       const select = LiteGraph.createNode('transform/select');
       select.pos = [250, 150];
-      titanic.connect(0, select, 0);
       const umap = LiteGraph.createNode('ml/umap');
       umap.pos = [450, 150];
-      select.connect(1, umap, 0);
       const scatter = LiteGraph.createNode('viz/scatter2d');
       scatter.pos = [650, 150];
-      umap.connect(0, scatter, 0);
       const view = LiteGraph.createNode('viz/view');
       view.pos = [850, 150];
-      scatter.connect(0, view, 0);
       const dbscan = LiteGraph.createNode('ml/dbscan');
       dbscan.pos = [450, 350];
-      umap.connect(0, dbscan, 0);
       const log = LiteGraph.createNode('util/log');
       log.pos = [650, 350];
-      dbscan.connect(0, log, 0);
       graph.add(titanic);
       graph.add(select);
       graph.add(umap);
@@ -361,6 +355,12 @@
       graph.add(view);
       graph.add(dbscan);
       graph.add(log);
+      titanic.connect(0, select, 0);
+      select.connect(1, umap, 0);
+      umap.connect(0, scatter, 0);
+      scatter.connect(0, view, 0);
+      umap.connect(0, dbscan, 0);
+      dbscan.connect(0, log, 0);
     }
 
     function presetHistogram() {
@@ -369,17 +369,17 @@
       const select = LiteGraph.createNode('transform/select');
       select.pos = [250, 150];
       select.properties.fields = ['Fare'];
-      titanic.connect(0, select, 0);
       const bar = LiteGraph.createNode('viz/bar');
       bar.pos = [450, 150];
-      select.connect(1, bar, 0);
       const view = LiteGraph.createNode('viz/view');
       view.pos = [650, 150];
-      bar.connect(0, view, 0);
       graph.add(titanic);
       graph.add(select);
       graph.add(bar);
       graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(1, bar, 0);
+      bar.connect(0, view, 0);
     }
 
     function presetPython() {
@@ -388,22 +388,22 @@
       const select = LiteGraph.createNode('transform/select');
       select.pos = [250, 150];
       select.properties.field = 'Fare';
-      titanic.connect(0, select, 0);
       const py = LiteGraph.createNode('util/python');
       py.pos = [450, 150];
       py.properties.code = "[{'double': v*2} for v in data]";
-      select.connect(0, py, 0);
       const table = LiteGraph.createNode('viz/table');
       table.pos = [650, 150];
-      py.connect(0, table, 0);
       const view = LiteGraph.createNode('viz/view');
       view.pos = [850, 150];
-      table.connect(0, view, 0);
       graph.add(titanic);
       graph.add(select);
       graph.add(py);
       graph.add(table);
       graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(0, py, 0);
+      py.connect(0, table, 0);
+      table.connect(0, view, 0);
     }
 
     function presetTsne() {
@@ -412,21 +412,21 @@
       const select = LiteGraph.createNode('transform/select');
       select.pos = [250, 150];
       select.properties.fields = ['Fare', 'Age'];
-      titanic.connect(0, select, 0);
       const tsne = LiteGraph.createNode('ml/tsne');
       tsne.pos = [450, 150];
-      select.connect(1, tsne, 0);
       const scatter = LiteGraph.createNode('viz/scatter2d');
       scatter.pos = [650, 150];
-      tsne.connect(0, scatter, 0);
       const view = LiteGraph.createNode('viz/view');
       view.pos = [850, 150];
-      scatter.connect(0, view, 0);
       graph.add(titanic);
       graph.add(select);
       graph.add(tsne);
       graph.add(scatter);
       graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(1, tsne, 0);
+      tsne.connect(0, scatter, 0);
+      scatter.connect(0, view, 0);
     }
 
     function presetUmap3D() {
@@ -435,22 +435,22 @@
       const select = LiteGraph.createNode('transform/select');
       select.pos = [250, 150];
       select.properties.fields = ['Fare', 'Age', 'Pclass'];
-      titanic.connect(0, select, 0);
       const umap = LiteGraph.createNode('ml/umap');
       umap.pos = [450, 150];
       umap.properties.n_components = 3;
-      select.connect(1, umap, 0);
       const scatter = LiteGraph.createNode('viz/scatter3d');
       scatter.pos = [650, 150];
-      umap.connect(0, scatter, 0);
       const view = LiteGraph.createNode('viz/view');
       view.pos = [850, 150];
-      scatter.connect(0, view, 0);
       graph.add(titanic);
       graph.add(select);
       graph.add(umap);
       graph.add(scatter);
       graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(1, umap, 0);
+      umap.connect(0, scatter, 0);
+      scatter.connect(0, view, 0);
     }
 
     const presets = [
