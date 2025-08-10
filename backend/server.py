@@ -27,6 +27,12 @@ class Matrix(BaseModel):
     params: dict | None = None
 
 
+class TableData(BaseModel):
+    """Wrapper for arbitrary table-like data."""
+
+    data: Any
+
+
 class CodeRequest(BaseModel):
     code: str
     data: Any | None = None
@@ -46,6 +52,16 @@ def passengers(limit: int = 10) -> list[dict]:
         limit: Number of rows to return.
     """
     return df.head(limit).to_dict(orient="records")
+
+
+@app.post("/describe")
+def describe_table(req: TableData) -> dict:
+    """Return descriptive statistics for arbitrary table-like data."""
+    try:
+        frame = pd.DataFrame(req.data)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return frame.describe(include="all").replace({np.nan: None}).to_dict()
 
 
 @app.post("/tsne")
