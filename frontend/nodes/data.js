@@ -23,3 +23,23 @@ TitanicNode.prototype.onExecute = async function() {
 };
 registerNode('data/titanic', TitanicNode);
 
+function RandomDataNode() {
+  this.addOutput('data', 'array');
+  this.addProperty('count', 10);
+  this.addProperty('min', 0);
+  this.addProperty('max', 1);
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('slider', 'count', this.properties.count, v => (this.properties.count = v), { min: 1, max: 100, step: 1, precision: 0 });
+  this.addWidget('slider', 'min', this.properties.min, v => (this.properties.min = v), { min: -100, max: 100, step: 1 });
+  this.addWidget('slider', 'max', this.properties.max, v => (this.properties.max = v), { min: -100, max: 100, step: 1 });
+}
+RandomDataNode.title = 'Random Data';
+RandomDataNode.icon = '🎲';
+RandomDataNode.prototype.onExecute = function() {
+  const { count, min, max } = this.properties;
+  const data = Array.from({ length: Math.round(count) }, () => Math.random() * (max - min) + min);
+  this.setOutputData(0, data);
+};
+registerNode('data/random', RandomDataNode);
+

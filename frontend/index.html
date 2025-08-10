@@ -187,6 +187,7 @@
     });
 
     graph.onNodeAdded = node => {
+      console.log(`${node.title || node.type} movable:`, canvas.allow_dragnodes && !(node.flags && node.flags.not_movable));
       node.color = "rgba(255,255,255,0)";
       node.bgcolor = "rgba(255,255,255,0)";
       node.boxcolor = "rgba(255,255,255,0)";
@@ -212,10 +213,7 @@
           ctx.lineTo(0,r);
           ctx.quadraticCurveTo(0,0,r,0);
         }
-        const grad = ctx.createLinearGradient(0,0,0,h);
-        grad.addColorStop(0,"#444");
-        grad.addColorStop(1,"#222");
-        ctx.fillStyle = grad;
+        ctx.fillStyle = "#333";
         ctx.strokeStyle = "#666";
         ctx.lineWidth = 1;
         ctx.fill();

@@ -1,3 +1,10 @@
+function drawPlotArea(ctx, w, h) {
+  ctx.fillStyle = '#222';
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = '#666';
+  ctx.strokeRect(0, 0, w, h);
+}
+
 function BarChartNode() {
   this.addInput('data', 'array');
   this.size = [200, 150];
@@ -5,6 +12,7 @@ function BarChartNode() {
   this._offset = [0, 0];
   this.color = '#222';
   this.bgcolor = '#444';
+  enableInteraction(this);
   this.addWidget('button', 'save', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
@@ -35,6 +43,7 @@ BarChartNode.prototype.onDrawBackground = function(ctx) {
   ctx.save();
   ctx.translate(this._offset[0], this._offset[1] + top);
   ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
   ctx.fillStyle = '#3a7';
   for (let i = 0; i < this._values.length; i++) {
     const v = this._values[i];
@@ -52,6 +61,7 @@ function Scatter2DNode() {
   this._offset = [0, 0];
   this.color = '#222';
   this.bgcolor = '#444';
+  enableInteraction(this);
   this.addWidget('button', 'save', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
@@ -86,6 +96,7 @@ Scatter2DNode.prototype.onDrawBackground = function(ctx) {
   ctx.save();
   ctx.translate(this._offset[0], this._offset[1] + top);
   ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
   ctx.fillStyle = '#7af';
   for (const p of this._pts) {
     const x = ((p[0] - minX) / ((maxX - minX) || 1)) * w;
@@ -105,6 +116,7 @@ function LineChartNode() {
   this._offset = [0, 0];
   this.color = '#222';
   this.bgcolor = '#444';
+  enableInteraction(this);
   this.addWidget('button', 'save', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
@@ -135,6 +147,7 @@ LineChartNode.prototype.onDrawBackground = function(ctx) {
   ctx.save();
   ctx.translate(this._offset[0], this._offset[1] + top);
   ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
   ctx.strokeStyle = '#faa';
   ctx.beginPath();
   this._values.forEach((v, i) => {
@@ -155,6 +168,7 @@ function HistogramNode() {
   this._offset = [0, 0];
   this.color = '#222';
   this.bgcolor = '#444';
+  enableInteraction(this);
   this.addWidget('button', 'save', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
@@ -194,6 +208,7 @@ HistogramNode.prototype.onDrawBackground = function(ctx) {
   ctx.save();
   ctx.translate(this._offset[0], this._offset[1] + top);
   ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
   ctx.fillStyle = '#af7';
   for (let i = 0; i < bins; i++) {
     const barHeight = (counts[i] / maxCount) * h;
