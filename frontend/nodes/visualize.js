@@ -1296,10 +1296,12 @@ GlyphsNode.prototype.onExecute = function() {
   const d = this.getInputData(0);
   if (!Array.isArray(d) || !d.length) return;
   this._data = d;
-  const dims = d[0].length || 0;
+  const firstRow = d.find(Array.isArray);
+  const dims = firstRow ? firstRow.length : 0;
   const mins = Array(dims).fill(Infinity);
   const maxs = Array(dims).fill(-Infinity);
   d.forEach(row => {
+    if (!Array.isArray(row)) return;
     row.forEach((v, i) => {
       if (v < mins[i]) mins[i] = v;
       if (v > maxs[i]) maxs[i] = v;
