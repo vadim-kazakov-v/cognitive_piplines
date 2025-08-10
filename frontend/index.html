@@ -486,13 +486,98 @@
       scatter.connect(0, view, 0);
     }
 
+    function presetViolin() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const select = LiteGraph.createNode('transform/select');
+      select.pos = [250, 150];
+      select.properties.field = 'Age';
+      const violin = LiteGraph.createNode('viz/violin');
+      violin.pos = [450, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [650, 150];
+      graph.add(titanic);
+      graph.add(select);
+      graph.add(violin);
+      graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(0, violin, 0);
+      violin.connect(0, view, 0);
+    }
+
+    function presetPieChart() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const select = LiteGraph.createNode('transform/select');
+      select.pos = [250, 150];
+      select.properties.field = 'Pclass';
+      const py = LiteGraph.createNode('util/python');
+      py.pos = [450, 150];
+      py.properties.code = `from collections import Counter
+result = Counter(data)`;
+      const pie = LiteGraph.createNode('viz/pie');
+      pie.pos = [650, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [850, 150];
+      graph.add(titanic);
+      graph.add(select);
+      graph.add(py);
+      graph.add(pie);
+      graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(0, py, 0);
+      py.connect(0, pie, 0);
+      pie.connect(0, view, 0);
+    }
+
+    function presetSankey() {
+      const titanic = LiteGraph.createNode('data/titanic');
+      titanic.pos = [50, 150];
+      const select = LiteGraph.createNode('transform/select');
+      select.pos = [250, 150];
+      select.properties.fields = ['Pclass', 'Survived'];
+      const py = LiteGraph.createNode('util/python');
+      py.pos = [450, 150];
+      py.properties.code = `from collections import Counter
+nodes = []
+index = {}
+def idx(name):
+    if name not in index:
+        index[name] = len(nodes)
+        nodes.append(name)
+    return index[name]
+counts = Counter()
+for r in data:
+    s = idx(f"Pclass {r['Pclass']}")
+    t = idx(f"Survived {r['Survived']}")
+    counts[(s, t)] += 1
+links = [{'source': s, 'target': t, 'value': v} for (s, t), v in counts.items()]
+result = {'nodes': nodes, 'links': links}`;
+      const sankey = LiteGraph.createNode('viz/sankey');
+      sankey.pos = [650, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [850, 150];
+      graph.add(titanic);
+      graph.add(select);
+      graph.add(py);
+      graph.add(sankey);
+      graph.add(view);
+      titanic.connect(0, select, 0);
+      select.connect(1, py, 0);
+      py.connect(0, sankey, 0);
+      sankey.connect(0, view, 0);
+    }
+
     const presets = [
       { name: 'Simple UMAP', fn: presetSimpleUMAP },
       { name: 'UMAP + DBSCAN', fn: presetUmapDbscanPlot },
       { name: 'Histogram', fn: presetHistogram },
       { name: 'Python', fn: presetPython },
       { name: 't-SNE', fn: presetTsne },
-      { name: 'UMAP 3D', fn: presetUmap3D }
+      { name: 'UMAP 3D', fn: presetUmap3D },
+      { name: 'Violin', fn: presetViolin },
+      { name: 'Pie Chart', fn: presetPieChart },
+      { name: 'Sankey', fn: presetSankey }
     ];
 
     const presetList = document.getElementById('preset-list');

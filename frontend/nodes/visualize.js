@@ -887,6 +887,7 @@ registerNode('viz/lissajous', LissajousNode);
 
 function ParallelCoordsNode() {
   this.addInput('data', 'array');
+  this.addInput('color', 'array');
   this.addOutput('image', 'string');
   this.size = [300, 200];
   this._zoom = 1;
@@ -912,6 +913,7 @@ ParallelCoordsNode.prototype.onExecute = function() {
   const d = this.getInputData(0);
   if (!d) return;
   this._data = d;
+  this._colors = this.getInputData(1);
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, ParallelCoordsNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
@@ -939,8 +941,9 @@ ParallelCoordsNode.prototype.onDrawBackground = function(ctx) {
   ctx.scale(this._zoom, this._zoom);
   drawPlotArea(ctx, w, h);
   const step = w / (keys.length - 1);
-  ctx.strokeStyle = 'rgba(122,170,255,0.5)';
-  this._data.forEach(row => {
+  const cols = this._colors || [];
+  ctx.globalAlpha = 0.5;
+  this._data.forEach((row, idx) => {
     ctx.beginPath();
     keys.forEach((k, i) => {
       const r = ranges[k];
@@ -950,8 +953,10 @@ ParallelCoordsNode.prototype.onDrawBackground = function(ctx) {
       if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
+    ctx.strokeStyle = labelColor(cols[idx]);
     ctx.stroke();
   });
+  ctx.globalAlpha = 1;
   ctx.strokeStyle = '#999';
   ctx.font = '10px sans-serif';
   ctx.fillStyle = '#fff';
