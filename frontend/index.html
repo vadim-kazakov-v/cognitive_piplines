@@ -286,11 +286,15 @@
       umap.pos = [250, 150];
       const scatter = LiteGraph.createNode('viz/scatter2d');
       scatter.pos = [450, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [650, 150];
       graph.add(titanic);
       graph.add(umap);
       graph.add(scatter);
+      graph.add(view);
       titanic.connect(0, umap, 0);
       umap.connect(0, scatter, 0);
+      scatter.connect(0, view, 0);
     }
   </script>
   <script src="nodes/data.js"></script>
@@ -300,6 +304,6 @@
   <script src="nodes/util.js"></script>
   <script src="nodes/ml.js"></script>
   <script src="nodes/python.js"></script>
-  <script>defaultPipeline(); autoLayout();</script>
+  <script>defaultPipeline(); autoLayout(); graph.start();</script>
 </body>
 </html>
