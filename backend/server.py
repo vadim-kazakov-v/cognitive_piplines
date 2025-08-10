@@ -56,7 +56,7 @@ def tsne(matrix: Matrix) -> list[list[float]]:
     from sklearn.manifold import TSNE
 
     params = matrix.params or {}
-    data = np.asarray(matrix.data)
+    data = np.asarray(matrix.data, dtype=float)
     n_samples = data.shape[0]
 
     if n_samples < 2:
@@ -92,7 +92,14 @@ def dbscan(matrix: Matrix) -> list[int]:
     from sklearn.cluster import DBSCAN
 
     params = matrix.params or {}
-    labels = DBSCAN(**params).fit_predict(matrix.data)
+    data = np.asarray(matrix.data)
+    n_samples = data.shape[0]
+
+    if n_samples == 0:
+        return []
+
+    params["min_samples"] = min(params.get("min_samples", 5), n_samples)
+    labels = DBSCAN(**params).fit_predict(data)
     return labels.tolist()
 
 
