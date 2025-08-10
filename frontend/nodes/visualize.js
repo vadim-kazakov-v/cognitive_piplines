@@ -1293,15 +1293,25 @@ function GlyphsNode() {
 GlyphsNode.title = 'Glyphs';
 GlyphsNode.icon = '⭐';
 GlyphsNode.prototype.onExecute = function() {
-  const d = this.getInputData(0);
-  if (!Array.isArray(d) || !d.length) return;
-  this._data = d;
-  const firstRow = d.find(Array.isArray);
-  const dims = firstRow ? firstRow.length : 0;
+  const input = this.getInputData(0);
+  if (!Array.isArray(input) || !input.length) return;
+
+  let data = input;
+  if (!Array.isArray(input[0])) {
+    const row = input[0];
+    if (row && typeof row === 'object') {
+      const keys = Object.keys(row);
+      data = input.map(r => keys.map(k => parseFloat(r[k])));
+    } else {
+      return;
+    }
+  }
+
+  this._data = data;
+  const dims = data[0] ? data[0].length : 0;
   const mins = Array(dims).fill(Infinity);
   const maxs = Array(dims).fill(-Infinity);
-  d.forEach(row => {
-    if (!Array.isArray(row)) return;
+  data.forEach(row => {
     row.forEach((v, i) => {
       if (v < mins[i]) mins[i] = v;
       if (v > maxs[i]) maxs[i] = v;
