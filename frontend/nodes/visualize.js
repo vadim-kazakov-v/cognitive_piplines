@@ -603,6 +603,11 @@ function drawTableView(ctx, data, props, w, h, state) {
   ctx.strokeRect(0, 0, w, h);
   let rows = Array.isArray(data) ? data.slice() : [data];
   if (!rows.length) return;
+  // if array contains primitive values (numbers, strings, etc.),
+  // wrap them into objects so the table can show a "value" column
+  if (typeof rows[0] !== 'object' || rows[0] === null || Array.isArray(rows[0])) {
+    rows = rows.map(v => ({ value: v }));
+  }
   if (props.search) {
     const s = props.search.toLowerCase();
     rows = rows.filter(r => {
@@ -792,6 +797,10 @@ TableViewNode.prototype.onDrawBackground = function(ctx) {
 function adjustTableSize() {
   if (!this._data) return;
   let rows = Array.isArray(this._data) ? this._data.slice() : [this._data];
+  // wrap primitive entries so the table can display them
+  if (rows.length && (typeof rows[0] !== 'object' || rows[0] === null || Array.isArray(rows[0]))) {
+    rows = rows.map(v => ({ value: v }));
+  }
   if (this.properties.search) {
     const s = this.properties.search.toLowerCase();
     rows = rows.filter(r => {
