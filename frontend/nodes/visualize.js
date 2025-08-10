@@ -375,20 +375,30 @@ HistogramNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/hist', HistogramNode);
 
-function drawTableView(ctx, data, props, w, h) {
+function drawTableView(ctx, data, props, w, h, state) {
+  const headerH = 18;
+  const paginationH = 20;
   ctx.fillStyle = '#222';
   ctx.fillRect(0, 0, w, h);
   ctx.strokeStyle = '#666';
   ctx.strokeRect(0, 0, w, h);
   let rows = Array.isArray(data) ? data.slice() : [data];
   if (!rows.length) return;
-  if (props.filterColumn && props.filterValue) {
+  if (props.search) {
+    const s = props.search.toLowerCase();
     rows = rows.filter(r => {
-      const val = typeof r === 'object' && !Array.isArray(r)
-        ? r[props.filterColumn]
-        : r[Number(props.filterColumn)];
-      return val !== undefined && String(val).includes(props.filterValue);
+      const vals = typeof r === 'object' && !Array.isArray(r)
+        ? Object.values(r)
+        : r;
+      return vals && vals.some(v => String(v).toLowerCase().includes(s));
     });
+  }
+  let cols;
+  if (typeof rows[0] === 'object' && !Array.isArray(rows[0])) {
+    cols = Object.keys(rows[0]);
+  } else {
+    const len = Array.isArray(rows[0]) ? rows[0].length : 0;
+    cols = Array.from({ length: len }, (_, i) => String(i));
   }
   if (props.sortColumn) {
     const col = props.sortColumn;
@@ -404,36 +414,74 @@ function drawTableView(ctx, data, props, w, h) {
       return 0;
     });
   }
-  const start = props.page * props.pageSize;
-  rows = rows.slice(start, start + props.pageSize);
-  if (!rows.length) return;
-  let cols;
-  if (typeof rows[0] === 'object' && !Array.isArray(rows[0])) {
-    cols = Object.keys(rows[0]);
-  } else {
-    const len = Array.isArray(rows[0]) ? rows[0].length : 0;
-    cols = Array.from({ length: len }, (_, i) => String(i));
-  }
-  const colWidth = w / cols.length;
-  ctx.fillStyle = '#333';
-  ctx.fillRect(0, 0, w, 18);
-  ctx.fillStyle = '#fff';
   ctx.font = '12px monospace';
-  cols.forEach((c, i) => ctx.fillText(c, i * colWidth + 4, 12));
-  const maxRows = Math.floor((h - 18) / 16);
-  for (let r = 0; r < Math.min(rows.length, maxRows); r++) {
-    const rowY = 18 + r * 16;
+  const colWidths = cols.map((c, i) => {
+    let max = ctx.measureText(c).width + 8;
+    rows.forEach(r => {
+      const val = typeof r === 'object' && !Array.isArray(r) ? r[c] : r[i];
+      const text = val !== undefined ? String(val) : '';
+      max = Math.max(max, ctx.measureText(text).width + 8);
+    });
+    return max;
+  });
+  const totalW = colWidths.reduce((a, b) => a + b, 0);
+  const scale = w / totalW;
+  const colRects = [];
+  let x = 0;
+  for (let i = 0; i < colWidths.length; i++) {
+    const cw = colWidths[i] * scale;
+    colRects.push({ x, w: cw, name: cols[i] });
+    x += cw;
+  }
+  const tableH = h - paginationH;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(0, 0, w, headerH);
+  ctx.fillStyle = '#fff';
+  colRects.forEach((r, i) => {
+    let title = cols[i];
+    if (props.sortColumn === cols[i]) title += props.sortOrder === 'asc' ? ' ▲' : ' ▼';
+    ctx.fillText(title, r.x + 4, 12);
+  });
+  const totalPages = Math.max(1, Math.ceil(rows.length / props.pageSize));
+  const page = Math.min(props.page, totalPages - 1);
+  if (page !== props.page) props.page = page;
+  const start = page * props.pageSize;
+  const pageRows = rows.slice(start, start + props.pageSize);
+  const maxRows = Math.floor((tableH - headerH) / 16);
+  for (let r = 0; r < Math.min(pageRows.length, maxRows); r++) {
+    const rowY = headerH + r * 16;
     if (r % 2) {
       ctx.fillStyle = '#2a2a2a';
       ctx.fillRect(0, rowY, w, 16);
     }
     ctx.fillStyle = '#fff';
-    const row = rows[r];
-    cols.forEach((c, i) => {
-      const val = typeof row === 'object' && !Array.isArray(row) ? row[c] : row[i];
+    const row = pageRows[r];
+    colRects.forEach((c, i) => {
+      const val = typeof row === 'object' && !Array.isArray(row) ? row[c.name] : row[i];
       const text = val !== undefined ? String(val) : '';
-      ctx.fillText(text.slice(0, Math.floor(colWidth / 7)), i * colWidth + 4, rowY + 12);
+      ctx.fillText(text.slice(0, Math.floor(c.w / 7)), c.x + 4, rowY + 12);
     });
+  }
+  const pagY = tableH;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(0, pagY, w, paginationH);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(`Page ${page + 1}/${totalPages}`, w / 2 - 30, pagY + 14);
+  ctx.fillStyle = '#555';
+  ctx.fillRect(4, pagY + 2, 40, 16);
+  ctx.fillRect(w - 44, pagY + 2, 40, 16);
+  ctx.fillStyle = '#fff';
+  ctx.fillText('Prev', 8, pagY + 14);
+  ctx.fillText('Next', w - 40, pagY + 14);
+  if (state) {
+    state.headerH = headerH;
+    state.colRects = colRects;
+    state.totalPages = totalPages;
+    state.pagination = {
+      height: paginationH,
+      prev: { x: 4, y: pagY + 2, w: 40, h: 16 },
+      next: { x: w - 44, y: pagY + 2, w: 40, h: 16 }
+    };
   }
 }
 
@@ -446,37 +494,55 @@ function TableViewNode() {
   this.bgcolor = '#444';
   disableNodeDrag(this);
   this.properties = {
-    filterColumn: '',
-    filterValue: '',
+    search: '',
     sortColumn: '',
     sortOrder: 'asc',
     page: 0,
     pageSize: 10,
   };
-  this.addWidget('text', 'filter col', this.properties.filterColumn, v => {
-    this.properties.filterColumn = v;
+  this.addWidget('text', 'search', this.properties.search, v => {
+    this.properties.search = v;
+    this.properties.page = 0;
     this.setDirtyCanvas(true, true);
   });
-  this.addWidget('text', 'filter val', this.properties.filterValue, v => {
-    this.properties.filterValue = v;
-    this.setDirtyCanvas(true, true);
-  });
-  this.addWidget('text', 'sort col', this.properties.sortColumn, v => {
-    this.properties.sortColumn = v;
-    this.setDirtyCanvas(true, true);
-  });
-  this.addWidget('combo', 'order', this.properties.sortOrder, v => {
-    this.properties.sortOrder = v;
-    this.setDirtyCanvas(true, true);
-  }, { values: ['asc', 'desc'] });
-  this.addWidget('number', 'page', this.properties.page, v => {
-    this.properties.page = Math.max(0, Math.floor(v));
-    this.setDirtyCanvas(true, true);
-  }, { min: 0, step: 1 });
-  this.addWidget('number', 'pageSize', this.properties.pageSize, v => {
-    this.properties.pageSize = Math.max(1, Math.floor(v));
-    this.setDirtyCanvas(true, true);
-  }, { min: 1, step: 1 });
+  this.onMouseDown = function(e) {
+    if (!this._tableState) return false;
+    const header = LiteGraph.NODE_TITLE_HEIGHT;
+    const widgetsH = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const limit = header + widgetsH;
+    const localX = e.canvasX - this.pos[0];
+    const localY = e.canvasY - this.pos[1];
+    if (localY < limit || localY > this.size[1]) return false;
+    const y = localY - limit;
+    const state = this._tableState;
+    if (y < state.headerH) {
+      for (const c of state.colRects) {
+        if (localX >= c.x && localX <= c.x + c.w) {
+          if (this.properties.sortColumn === c.name) {
+            this.properties.sortOrder = this.properties.sortOrder === 'asc' ? 'desc' : 'asc';
+          } else {
+            this.properties.sortColumn = c.name;
+            this.properties.sortOrder = 'asc';
+          }
+          this.setDirtyCanvas(true, true);
+          return true;
+        }
+      }
+    } else if (y > (this.size[1] - limit - state.pagination.height)) {
+      const p = state.pagination;
+      if (localX >= p.prev.x && localX <= p.prev.x + p.prev.w) {
+        this.properties.page = Math.max(0, this.properties.page - 1);
+        this.setDirtyCanvas(true, true);
+        return true;
+      }
+      if (localX >= p.next.x && localX <= p.next.x + p.next.w) {
+        this.properties.page = Math.min(state.totalPages - 1, this.properties.page + 1);
+        this.setDirtyCanvas(true, true);
+        return true;
+      }
+    }
+    return false;
+  };
 }
 TableViewNode.title = 'Table';
 TableViewNode.icon = '📋';
@@ -495,7 +561,8 @@ TableViewNode.prototype.onDrawBackground = function(ctx) {
   const h = this.size[1] - top;
   ctx.save();
   ctx.translate(0, top);
-  drawTableView(ctx, this._data, this.properties, w, h);
+  this._tableState = {};
+  drawTableView(ctx, this._data, this.properties, w, h, this._tableState);
   ctx.restore();
 };
 registerNode('viz/table', TableViewNode);
