@@ -89,7 +89,9 @@ def umap(matrix: Matrix) -> list[list[float]]:
     if n_samples < 3:
         return [[0.0] * n_components for _ in range(n_samples)]
 
-    params["n_neighbors"] = min(params.get("n_neighbors", 15), n_samples - 1)
+    n_neighbors = int(params.get("n_neighbors", 15))
+    n_neighbors = min(max(n_neighbors, 2), n_samples - 1)
+    params["n_neighbors"] = n_neighbors
     embedding = umap.UMAP(n_components=n_components, **params).fit_transform(data)
     return embedding.tolist()
 
