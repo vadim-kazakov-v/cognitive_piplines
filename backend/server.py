@@ -286,12 +286,19 @@ def pca(matrix: Matrix) -> list[list[float]]:
 def run_python(req: CodeRequest) -> Any:
     """Execute arbitrary Python code with optional data."""
 
-    local = {"data": req.data}
+    # share a single namespace for executed code so that functions defined
+    # within the provided snippet can access variables defined alongside
+    # them. Using separate globals and locals (as done previously) causes
+    # lookups for these variables to fail when the function is executed.
+    namespace = {"data": req.data}
     try:
-        result = eval(req.code, {}, local)
+        # try to evaluate the code as an expression first
+        result = eval(req.code, namespace)
     except Exception:
-        exec(req.code, {}, local)
-        result = local.get("result")
+        # fall back to executing statements; any variable named ``result``
+        # will be returned to the caller
+        exec(req.code, namespace)
+        result = namespace.get("result")
     # ensure the result is JSON serialisable
     if callable(result):
         return repr(result)
