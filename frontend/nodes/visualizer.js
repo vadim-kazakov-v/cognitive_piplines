@@ -2,9 +2,14 @@ function enableInteraction(node) {
   node._zoom = 1;
   node._offset = [0, 0];
   node.onMouseDown = function(e) {
-    const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const header = LiteGraph.NODE_TITLE_HEIGHT;
+    const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const limit = header + widgets;
     const localY = e.canvasy - this.pos[1];
-    if (localY < top) return; // ignore clicks on widgets
+    if (localY < limit) {
+      // allow dragging the node itself from the title or widget area
+      return; // do not capture
+    }
     this._dragging = true;
     this._last = [e.canvasx, e.canvasy];
     this.captureInput(true);
