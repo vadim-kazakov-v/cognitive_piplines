@@ -53,7 +53,7 @@ BarChartNode.prototype.onExecute = function() {
 };
 BarChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   const max = Math.max(...this._values) || 1;
@@ -106,7 +106,7 @@ Scatter2DNode.prototype.onExecute = function() {
 };
 Scatter2DNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   const xs = this._pts.map(p => p[0]);
@@ -195,7 +195,7 @@ Scatter3DNode.prototype.onExecute = function() {
 };
 Scatter3DNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   if (!this._glcanvas || this._glcanvas.width !== w || this._glcanvas.height !== h) {
@@ -299,7 +299,7 @@ LineChartNode.prototype.onExecute = function() {
 };
 LineChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   const max = Math.max(...this._values);
@@ -355,7 +355,7 @@ HistogramNode.prototype.onExecute = function() {
 HistogramNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
   const bins = 10;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   const min = Math.min(...this._values);
@@ -562,7 +562,7 @@ TableViewNode.prototype.onExecute = function() {
 };
 TableViewNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data) return;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
