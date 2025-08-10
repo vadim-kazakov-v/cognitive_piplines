@@ -81,14 +81,35 @@ function OneHotNode() {
   this.addProperty('field', 'Sex');
   this.color = '#222';
   this.bgcolor = '#444';
-  this.addWidget('text', 'field', this.properties.field, v => (this.properties.field = v));
+  this.fieldWidget = this.addWidget('combo', 'field', this.properties.field, v => (this.properties.field = v), { values: [] });
 }
 OneHotNode.title = 'One-Hot Encode';
 OneHotNode.icon = '📊';
+OneHotNode.prototype.updateColumns = function(data) {
+  if (!Array.isArray(data) || !data.length) return;
+  const cols = Object.keys(data[0]);
+  if (this._columns && cols.join(',') === this._columns.join(',')) return;
+  this._columns = cols;
+
+  if (this.fieldWidget) {
+    this.fieldWidget.options.values = cols;
+    if (!cols.includes(this.properties.field)) {
+      this.properties.field = cols[0] || '';
+      this.fieldWidget.value = this.properties.field;
+    }
+  }
+
+  this.setSize(this.computeSize());
+};
+
 OneHotNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
+
+  this.updateColumns(data);
+
   const field = this.properties.field;
+  if (!field) return;
   const categories = Array.from(new Set(data.map(r => r[field])));
   const map = {};
   categories.forEach((c, i) => (map[c] = i));
