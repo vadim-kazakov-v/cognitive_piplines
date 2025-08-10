@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import List, Any
+from typing import Any, List
 
+import numpy as np
 import pandas as pd
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -55,7 +56,14 @@ def tsne(matrix: Matrix) -> list[list[float]]:
     from sklearn.manifold import TSNE
 
     params = matrix.params or {}
-    result = TSNE(n_components=2, **params).fit_transform(matrix.data)
+    data = np.asarray(matrix.data)
+    n_samples = data.shape[0]
+
+    if n_samples < 2:
+        return [[0.0, 0.0] for _ in range(n_samples)]
+
+    params["perplexity"] = min(params.get("perplexity", 30), n_samples - 1)
+    result = TSNE(n_components=2, **params).fit_transform(data)
     return result.tolist()
 
 
@@ -66,7 +74,14 @@ def umap(matrix: Matrix) -> list[list[float]]:
     import umap
 
     params = matrix.params or {}
-    embedding = umap.UMAP(n_components=2, **params).fit_transform(matrix.data)
+    data = np.asarray(matrix.data)
+    n_samples = data.shape[0]
+
+    if n_samples < 3:
+        return [[0.0, 0.0] for _ in range(n_samples)]
+
+    params["n_neighbors"] = min(params.get("n_neighbors", 15), n_samples - 1)
+    embedding = umap.UMAP(n_components=2, **params).fit_transform(data)
     return embedding.tolist()
 
 
