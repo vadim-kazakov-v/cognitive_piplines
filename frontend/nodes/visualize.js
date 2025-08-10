@@ -89,6 +89,7 @@ registerNode('viz/bar', BarChartNode);
 function Scatter2DNode() {
   this.addInput('points', 'array');
   this.addInput('color', 'array');
+  this.addInput('size', 'array');
   this.addOutput('image', 'string');
   this.size = [200, 150];
   this.resizable = true;
@@ -116,6 +117,7 @@ Scatter2DNode.prototype.onExecute = function() {
   if (!pts) return;
   this._pts = pts;
   this._colors = this.getInputData(1);
+  this._sizes = this.getInputData(2);
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, Scatter2DNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
@@ -141,7 +143,8 @@ Scatter2DNode.prototype.onDrawBackground = function(ctx) {
     const y = h - ((p[1] - minY) / ((maxY - minY) || 1)) * h;
     ctx.fillStyle = labelColor(this._colors && this._colors[i]);
     ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
+    const r = this._sizes && this._sizes[i] ? Math.max(1, Number(this._sizes[i])) : 3;
+    ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
@@ -881,4 +884,309 @@ LissajousNode.prototype.onDrawBackground = function(ctx) {
   ctx.restore();
 };
 registerNode('viz/lissajous', LissajousNode);
+
+function ParallelCoordsNode() {
+  this.addInput('data', 'array');
+  this.addOutput('image', 'string');
+  this.size = [300, 200];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    ParallelCoordsNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'parallel.png';
+    a.click();
+  }, { width: 30 });
+}
+ParallelCoordsNode.title = 'Parallel Coords';
+ParallelCoordsNode.icon = '🕸️';
+ParallelCoordsNode.prototype.onExecute = function() {
+  const d = this.getInputData(0);
+  if (!d) return;
+  this._data = d;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, ParallelCoordsNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+ParallelCoordsNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._data || !this._data.length) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const keys = Object.keys(this._data[0] || {}).filter(k => typeof this._data[0][k] === 'number');
+  if (keys.length < 2) return;
+  const ranges = {};
+  keys.forEach(k => { ranges[k] = { min: Infinity, max: -Infinity }; });
+  this._data.forEach(r => {
+    keys.forEach(k => {
+      const v = r[k];
+      if (typeof v === 'number') {
+        if (v < ranges[k].min) ranges[k].min = v;
+        if (v > ranges[k].max) ranges[k].max = v;
+      }
+    });
+  });
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  const step = w / (keys.length - 1);
+  ctx.strokeStyle = 'rgba(122,170,255,0.5)';
+  this._data.forEach(row => {
+    ctx.beginPath();
+    keys.forEach((k, i) => {
+      const r = ranges[k];
+      const v = row[k];
+      const x = i * step;
+      const y = h - ((v - r.min) / ((r.max - r.min) || 1)) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  });
+  ctx.strokeStyle = '#999';
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#fff';
+  keys.forEach((k, i) => {
+    const x = i * step;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+    ctx.fillText(k, x + 2, 12);
+  });
+  ctx.restore();
+};
+registerNode('viz/parallel', ParallelCoordsNode);
+
+function PieChartNode() {
+  this.addInput('data', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    PieChartNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'piechart.png';
+    a.click();
+  }, { width: 30 });
+}
+PieChartNode.title = 'Pie Chart';
+PieChartNode.icon = '🥧';
+PieChartNode.prototype.onExecute = function() {
+  const d = this.getInputData(0);
+  if (!d) return;
+  this._data = d;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, PieChartNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+PieChartNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._data) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const cx = w / 2;
+  const cy = h / 2;
+  const r = Math.min(w, h) / 2 - 4;
+  const entries = Array.isArray(this._data)
+    ? this._data.map((v, i) => [String(i), Number(v)])
+    : Object.entries(this._data);
+  const total = entries.reduce((a, [, v]) => a + (Number(v) || 0), 0);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  let start = 0;
+  entries.forEach(([label, value], i) => {
+    const angle = total ? (value / total) * Math.PI * 2 : 0;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.fillStyle = COLOR_PALETTE[i % COLOR_PALETTE.length];
+    ctx.arc(cx, cy, r, start, start + angle);
+    ctx.closePath();
+    ctx.fill();
+    start += angle;
+  });
+  ctx.restore();
+};
+registerNode('viz/pie', PieChartNode);
+
+function SankeyNode() {
+  this.addInput('data', 'object');
+  this.addOutput('image', 'string');
+  this.size = [300, 200];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    SankeyNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'sankey.png';
+    a.click();
+  }, { width: 30 });
+}
+SankeyNode.title = 'Sankey';
+SankeyNode.icon = '🔀';
+SankeyNode.prototype.onExecute = function() {
+  const d = this.getInputData(0);
+  if (!d) return;
+  this._data = d;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, SankeyNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+SankeyNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._data) return;
+  const nodes = this._data.nodes || [];
+  const links = this._data.links || [];
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  if (!nodes.length) { ctx.restore(); return; }
+  const levels = new Array(nodes.length).fill(0);
+  links.forEach(l => { levels[l.target] = Math.max(levels[l.target], levels[l.source] + 1); });
+  const maxLevel = Math.max(...levels);
+  const xStep = w / (maxLevel + 1);
+  const levelGroups = {};
+  levels.forEach((lvl, idx) => {
+    if (!levelGroups[lvl]) levelGroups[lvl] = [];
+    levelGroups[lvl].push(idx);
+  });
+  const positions = new Array(nodes.length);
+  Object.keys(levelGroups).forEach(lvl => {
+    const arr = levelGroups[lvl];
+    const yStep = h / (arr.length + 1);
+    arr.forEach((idx, j) => {
+      positions[idx] = { x: lvl * xStep + 10, y: (j + 1) * yStep };
+    });
+  });
+  links.forEach((l, i) => {
+    const s = positions[l.source];
+    const t = positions[l.target];
+    if (!s || !t) return;
+    const val = l.value || 1;
+    ctx.strokeStyle = COLOR_PALETTE[i % COLOR_PALETTE.length];
+    ctx.lineWidth = Math.max(1, val);
+    ctx.beginPath();
+    ctx.moveTo(s.x + 20, s.y);
+    ctx.bezierCurveTo((s.x + t.x) / 2, s.y, (s.x + t.x) / 2, t.y, t.x - 20, t.y);
+    ctx.stroke();
+  });
+  nodes.forEach((name, i) => {
+    const p = positions[i];
+    if (!p) return;
+    ctx.fillStyle = '#888';
+    ctx.fillRect(p.x - 10, p.y - 5, 20, 10);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(String(name), p.x - 10, p.y - 7);
+  });
+  ctx.restore();
+};
+registerNode('viz/sankey', SankeyNode);
+
+function ViolinChartNode() {
+  this.addInput('data', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    ViolinChartNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'violin.png';
+    a.click();
+  }, { width: 30 });
+}
+ViolinChartNode.title = 'Violin';
+ViolinChartNode.icon = '🎻';
+ViolinChartNode.prototype.onExecute = function() {
+  const d = this.getInputData(0);
+  if (!d) return;
+  this._data = d;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, ViolinChartNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+ViolinChartNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._data || !this._data.length) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const values = this._data.map(Number).filter(v => !isNaN(v));
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (!(max > min)) return;
+  const bandwidth = (max - min) / 20;
+  const kernel = u => Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
+  const steps = 40;
+  const ys = [];
+  const densities = [];
+  for (let i = 0; i <= steps; i++) {
+    const y = min + (i / steps) * (max - min);
+    ys.push(y);
+    const d = values.reduce((sum, v) => sum + kernel((y - v) / bandwidth), 0) / (values.length * bandwidth);
+    densities.push(d);
+  }
+  const maxD = Math.max(...densities);
+  const scale = (w / 2 - 4) / (maxD || 1);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  ctx.fillStyle = '#7af';
+  ctx.beginPath();
+  for (let i = 0; i < ys.length; i++) {
+    const y = h - ((ys[i] - min) / (max - min)) * h;
+    const x = densities[i] * scale;
+    if (i === 0) ctx.moveTo(w / 2 + x, y);
+    else ctx.lineTo(w / 2 + x, y);
+  }
+  for (let i = ys.length - 1; i >= 0; i--) {
+    const y = h - ((ys[i] - min) / (max - min)) * h;
+    const x = densities[i] * scale;
+    ctx.lineTo(w / 2 - x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+};
+registerNode('viz/violin', ViolinChartNode);
 
