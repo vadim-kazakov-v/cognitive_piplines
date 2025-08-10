@@ -212,6 +212,7 @@
       node.color = "rgba(255,255,255,0)";
       node.bgcolor = "rgba(255,255,255,0)";
       node.boxcolor = "rgba(255,255,255,0)";
+      const origBg = node.onDrawBackground;
       node.onDrawBackground = function(ctx) {
         if (this.flags && this.flags.collapsed) return;
         const w = this.size[0];
@@ -241,6 +242,7 @@
         ctx.fill();
         ctx.stroke();
         ctx.restore();
+        if (origBg) origBg.call(this, ctx);
       };
 
       const origExec = node.onExecute;
