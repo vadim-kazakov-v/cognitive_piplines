@@ -111,6 +111,7 @@
     LiteGraph.NODE_TITLE_COLOR = "#000";
     canvas.allow_interaction = canvas.allow_dragcanvas = canvas.allow_dragnodes = true;
     canvas.allow_searchbox = false;
+    canvas.multi_select = true;
     document.getElementById('main').addEventListener('dblclick', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -218,6 +219,33 @@
       });
     });
 
+    function groupSelectedNodes() {
+      const selected = Object.values(canvas.selected_nodes || {});
+      if (selected.length < 2) return;
+      const bounds = selected.reduce((acc, n) => {
+        acc.left = Math.min(acc.left, n.pos[0]);
+        acc.top = Math.min(acc.top, n.pos[1]);
+        acc.right = Math.max(acc.right, n.pos[0] + n.size[0]);
+        acc.bottom = Math.max(acc.bottom, n.pos[1] + n.size[1]);
+        return acc;
+      }, {left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity});
+      const group = new LGraphGroup("Group");
+      group.pos = [bounds.left - 40, bounds.top - 40];
+      group.size = [bounds.right - bounds.left + 80, bounds.bottom - bounds.top + 80];
+      graph.add(group);
+      selected.forEach(n => group.add(n));
+      canvas.setDirty(true, true);
+    }
+
+    canvas.canvas.addEventListener('click', e => {
+      if (Object.keys(canvas.selected_nodes).length > 1) {
+        canvas.adjustMouseEvent(e);
+        if (!graph.getNodeOnPos(e.canvasX, e.canvasY)) {
+          groupSelectedNodes();
+        }
+      }
+    });
+
     graph.onNodeAdded = node => {
       console.log(`${node.title || node.type} movable:`, canvas.allow_dragnodes && !(node.flags && node.flags.not_movable));
       node.color = "rgba(255,255,255,0)";
@@ -274,6 +302,7 @@
         const origDraw = node.onDrawForeground;
         node.onDrawForeground = function(ctx) {
           if (origDraw) origDraw.call(this, ctx);
+          if (!this.selected) return;
           let y = 20;
           ctx.fillStyle = '#000';
           ctx.font = '12px sans-serif';
