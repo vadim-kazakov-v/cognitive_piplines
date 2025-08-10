@@ -111,7 +111,8 @@
     LiteGraph.NODE_TITLE_COLOR = "#000";
     canvas.allow_interaction = canvas.allow_dragcanvas = canvas.allow_dragnodes = true;
     canvas.allow_searchbox = false;
-    canvas.multi_select = true;
+    // single click selects one node; hold Shift/Ctrl for multi-select
+    canvas.multi_select = false;
     document.getElementById('main').addEventListener('dblclick', e => {
       e.preventDefault();
       e.stopPropagation();
@@ -238,7 +239,7 @@
     }
 
     canvas.canvas.addEventListener('click', e => {
-      if (Object.keys(canvas.selected_nodes).length > 1) {
+      if (Object.keys(canvas.selected_nodes).length > 1 && !e.shiftKey && !e.ctrlKey) {
         canvas.adjustMouseEvent(e);
         if (!graph.getNodeOnPos(e.canvasX, e.canvasY)) {
           groupSelectedNodes();
