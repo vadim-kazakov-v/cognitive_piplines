@@ -507,6 +507,93 @@ HeatmapNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/heatmap', HeatmapNode);
 
+function CorrelationMapNode() {
+  this.addInput('data', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    CorrelationMapNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'corrmap.png';
+    a.click();
+  }, { width: 30 });
+}
+CorrelationMapNode.title = 'Correlation Map';
+CorrelationMapNode.icon = '🔗';
+CorrelationMapNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (!Array.isArray(data) || !data.length) return;
+  const keys = Object.keys(data[0]).filter(k => typeof data[0][k] === 'number');
+  if (!keys.length) return;
+  const cols = keys.map(k => data.map(r => Number(r[k] || 0)));
+  const n = cols.length;
+  const matrix = Array.from({ length: n }, () => Array(n).fill(0));
+  function corr(a, b) {
+    const m1 = a.reduce((s, v) => s + v, 0) / a.length;
+    const m2 = b.reduce((s, v) => s + v, 0) / b.length;
+    let num = 0, d1 = 0, d2 = 0;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i] - m1;
+      const y = b[i] - m2;
+      num += x * y;
+      d1 += x * x;
+      d2 += y * y;
+    }
+    return num / Math.sqrt(d1 * d2 || 1);
+  }
+  for (let i = 0; i < n; i++) {
+    for (let j = 0; j < n; j++) {
+      matrix[i][j] = corr(cols[i], cols[j]);
+    }
+  }
+  this._matrix = matrix;
+  this._columns = keys;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, CorrelationMapNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+CorrelationMapNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._matrix) return;
+  const labels = this._columns;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const labelSize = 40;
+  const cellW = (w - labelSize) / labels.length;
+  const cellH = (h - labelSize) / labels.length;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  for (let r = 0; r < labels.length; r++) {
+    for (let c = 0; c < labels.length; c++) {
+      const v = this._matrix[r][c];
+      const t = (v + 1) / 2;
+      const hue = (1 - t) * 240;
+      ctx.fillStyle = `hsl(${hue},100%,50%)`;
+      ctx.fillRect(labelSize + c * cellW, labelSize + r * cellH, cellW, cellH);
+    }
+  }
+  ctx.fillStyle = '#fff';
+  ctx.font = '10px monospace';
+  for (let i = 0; i < labels.length; i++) {
+    ctx.fillText(labels[i], labelSize + i * cellW + 4, 12);
+    ctx.fillText(labels[i], 4, labelSize + i * cellH + cellH / 2 + 4);
+  }
+  ctx.restore();
+};
+registerNode('viz/corrmap', CorrelationMapNode);
+
 function drawTableView(ctx, data, props, w, h, state) {
   const headerH = 18;
   const paginationH = 20;
