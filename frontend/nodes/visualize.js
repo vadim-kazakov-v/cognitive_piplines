@@ -29,7 +29,7 @@ function BarChartNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', 'save', null, () => {
+  this.addWidget('button', '💾', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
     canvas.height = this.size[1];
@@ -39,7 +39,7 @@ function BarChartNode() {
     a.href = canvas.toDataURL();
     a.download = 'barchart.png';
     a.click();
-  });
+  }, { width: 30 });
 }
 BarChartNode.title = 'Bar Chart';
 BarChartNode.icon = '📊';
@@ -82,7 +82,7 @@ function Scatter2DNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', 'save', null, () => {
+  this.addWidget('button', '💾', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
     canvas.height = this.size[1];
@@ -92,7 +92,7 @@ function Scatter2DNode() {
     a.href = canvas.toDataURL();
     a.download = 'scatter.png';
     a.click();
-  });
+  }, { width: 30 });
 }
 Scatter2DNode.title = 'Scatter2D';
 Scatter2DNode.icon = '📈';
@@ -140,13 +140,13 @@ function Scatter3DNode() {
   this.bgcolor = '#444';
   this._rot = [0, 0];
   this._zoom = 1;
-  this.addWidget('button', 'save', null, () => {
+  this.addWidget('button', '💾', null, () => {
     if (!this._glcanvas) return;
     const a = document.createElement('a');
     a.href = this._glcanvas.toDataURL();
     a.download = 'scatter3d.png';
     a.click();
-  });
+  }, { width: 30 });
   this.onMouseDown = function(e) {
     const header = LiteGraph.NODE_TITLE_HEIGHT;
     const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
@@ -275,7 +275,7 @@ function LineChartNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', 'save', null, () => {
+  this.addWidget('button', '💾', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
     canvas.height = this.size[1];
@@ -285,7 +285,7 @@ function LineChartNode() {
     a.href = canvas.toDataURL();
     a.download = 'linechart.png';
     a.click();
-  });
+  }, { width: 30 });
 }
 LineChartNode.title = 'Line Chart';
 LineChartNode.icon = '📉';
@@ -330,7 +330,7 @@ function HistogramNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', 'save', null, () => {
+  this.addWidget('button', '💾', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
     canvas.height = this.size[1];
@@ -340,7 +340,7 @@ function HistogramNode() {
     a.href = canvas.toDataURL();
     a.download = 'histogram.png';
     a.click();
-  });
+  }, { width: 30 });
 }
 HistogramNode.title = 'Histogram';
 HistogramNode.icon = '📚';
