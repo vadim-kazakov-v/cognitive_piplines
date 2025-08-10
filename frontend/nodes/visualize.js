@@ -537,53 +537,18 @@ function TableViewNode() {
     page: 0,
     pageSize: 10,
   };
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.placeholder = 'search';
-  input.style.position = 'absolute';
-  input.style.zIndex = 10;
-  input.style.background = '#444';
-  input.style.border = '1px solid #666';
-  input.style.color = '#fff';
-  input.style.borderRadius = '0';
-  input.style.boxSizing = 'border-box';
-  input.style.padding = '2px 4px';
-  input.addEventListener('input', () => {
-    this.properties.search = input.value;
+  this.addWidget('text', 'search', this.properties.search, v => {
+    this.properties.search = v;
     this.properties.page = 0;
     adjustTableSize.call(this);
     this.setDirtyCanvas(true, true);
-  });
-  this._searchInput = input;
-  const updatePos = () => {
-    if (!this._searchInput) return;
-    const rect = canvas.canvas.getBoundingClientRect();
-    const [x, y] = canvas.convertOffsetToCanvas(this.pos);
-    this._searchInput.style.left = `${rect.left + x + 4}px`;
-    this._searchInput.style.top = `${rect.top + y + LiteGraph.NODE_TITLE_HEIGHT + 4}px`;
-    this._searchInput.style.width = `${this.size[0] * canvas.ds.scale - 8}px`;
-    this._searchInput.style.height = `${LiteGraph.NODE_WIDGET_HEIGHT - 4}px`;
-    this._searchInput.style.fontSize = `${12 * canvas.ds.scale}px`;
-  };
-  this.onDrawForeground = function() {
-    updatePos();
-  };
-  this.onAdded = function() {
-    this._searchInput.value = this.properties.search;
-    canvas.canvas.parentNode.appendChild(this._searchInput);
-    adjustTableSize.call(this);
-    updatePos();
-  };
-  this.onRemoved = function() {
-    this._searchInput.remove();
-    this._searchInput = null;
-  };
+  }, { property: 'search' });
+
   this.onMouseDown = function(e) {
     if (!this._tableState) return false;
     const header = LiteGraph.NODE_TITLE_HEIGHT;
-    const widgetsH = LiteGraph.NODE_WIDGET_HEIGHT;
-    const gap = 8;
-    const limit = header + widgetsH + gap;
+    const widgetsH = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const limit = header + widgetsH;
     const localX = e.canvasX - this.pos[0];
     const localY = e.canvasY - this.pos[1];
     if (localY < limit || localY > this.size[1]) return false;
@@ -631,7 +596,8 @@ TableViewNode.prototype.onExecute = function() {
 };
 TableViewNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data) return;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT + 8;
+  const top = LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
@@ -655,7 +621,8 @@ function adjustTableSize() {
   const paginationH = 20;
   const visible = Math.min(rows.length, this.properties.pageSize);
   const tableH = headerH + visible * 16 + paginationH;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT + 8;
+  const top = LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   this.size[1] = top + tableH;
 }
 registerNode('viz/table', TableViewNode);
