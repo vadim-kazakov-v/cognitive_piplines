@@ -23,7 +23,13 @@ ApiNode.prototype.onExecute = async function() {
     if (typeof data[0] === 'number') {
       data = data.map(v => [v]);
     } else if (typeof data[0] === 'object' && !Array.isArray(data[0])) {
-      data = data.map(o => Object.values(o).filter(v => typeof v === 'number'));
+      const keys = [];
+      data.forEach(o => {
+        for (const k in o) {
+          if (typeof o[k] === 'number' && !keys.includes(k)) keys.push(k);
+        }
+      });
+      data = data.map(o => keys.map(k => (typeof o[k] === 'number' ? o[k] : 0)));
     }
   }
   const payload = { data };
