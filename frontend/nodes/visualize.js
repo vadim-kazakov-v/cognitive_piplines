@@ -246,6 +246,68 @@ HistogramNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/hist', HistogramNode);
 
+function drawTableView(ctx, data, props, w, h) {
+  ctx.fillStyle = '#222';
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = '#666';
+  ctx.strokeRect(0, 0, w, h);
+  let rows = Array.isArray(data) ? data.slice() : [data];
+  if (!rows.length) return;
+  if (props.filterColumn && props.filterValue) {
+    rows = rows.filter(r => {
+      const val = typeof r === 'object' && !Array.isArray(r)
+        ? r[props.filterColumn]
+        : r[Number(props.filterColumn)];
+      return val !== undefined && String(val).includes(props.filterValue);
+    });
+  }
+  if (props.sortColumn) {
+    const col = props.sortColumn;
+    const dir = props.sortOrder === 'desc' ? -1 : 1;
+    rows.sort((a, b) => {
+      const va = typeof a === 'object' && !Array.isArray(a) ? a[col] : a[Number(col)];
+      const vb = typeof b === 'object' && !Array.isArray(b) ? b[col] : b[Number(col)];
+      if (va == null && vb == null) return 0;
+      if (va == null) return -dir;
+      if (vb == null) return dir;
+      if (va > vb) return dir;
+      if (va < vb) return -dir;
+      return 0;
+    });
+  }
+  const start = props.page * props.pageSize;
+  rows = rows.slice(start, start + props.pageSize);
+  if (!rows.length) return;
+  let cols;
+  if (typeof rows[0] === 'object' && !Array.isArray(rows[0])) {
+    cols = Object.keys(rows[0]);
+  } else {
+    const len = Array.isArray(rows[0]) ? rows[0].length : 0;
+    cols = Array.from({ length: len }, (_, i) => String(i));
+  }
+  const colWidth = w / cols.length;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(0, 0, w, 18);
+  ctx.fillStyle = '#fff';
+  ctx.font = '12px monospace';
+  cols.forEach((c, i) => ctx.fillText(c, i * colWidth + 4, 12));
+  const maxRows = Math.floor((h - 18) / 16);
+  for (let r = 0; r < Math.min(rows.length, maxRows); r++) {
+    const rowY = 18 + r * 16;
+    if (r % 2) {
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(0, rowY, w, 16);
+    }
+    ctx.fillStyle = '#fff';
+    const row = rows[r];
+    cols.forEach((c, i) => {
+      const val = typeof row === 'object' && !Array.isArray(row) ? row[c] : row[i];
+      const text = val !== undefined ? String(val) : '';
+      ctx.fillText(text.slice(0, Math.floor(colWidth / 7)), i * colWidth + 4, rowY + 12);
+    });
+  }
+}
+
 function TableViewNode() {
   this.addInput('data', 'array');
   this.addOutput('image', 'string');
@@ -253,7 +315,7 @@ function TableViewNode() {
   this.resizable = true;
   this.color = '#222';
   this.bgcolor = '#444';
-  enableInteraction(this);
+  disableNodeDrag(this);
   this.properties = {
     filterColumn: '',
     filterValue: '',
@@ -303,73 +365,8 @@ TableViewNode.prototype.onDrawBackground = function(ctx) {
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
-  ctx.translate(this._offset[0], this._offset[1] + top);
-  ctx.scale(this._zoom, this._zoom);
-  ctx.fillStyle = '#222';
-  ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = '#666';
-  ctx.strokeRect(0, 0, w, h);
-  let rows = Array.isArray(this._data) ? this._data.slice() : [this._data];
-  if (!rows.length) {
-    ctx.restore();
-    return;
-  }
-  if (this.properties.filterColumn && this.properties.filterValue) {
-    rows = rows.filter(r => {
-      const val = typeof r === 'object' && !Array.isArray(r)
-        ? r[this.properties.filterColumn]
-        : r[Number(this.properties.filterColumn)];
-      return val !== undefined && String(val).includes(this.properties.filterValue);
-    });
-  }
-  if (this.properties.sortColumn) {
-    const col = this.properties.sortColumn;
-    const dir = this.properties.sortOrder === 'desc' ? -1 : 1;
-    rows.sort((a, b) => {
-      const va = typeof a === 'object' && !Array.isArray(a) ? a[col] : a[Number(col)];
-      const vb = typeof b === 'object' && !Array.isArray(b) ? b[col] : b[Number(col)];
-      if (va == null && vb == null) return 0;
-      if (va == null) return -dir;
-      if (vb == null) return dir;
-      if (va > vb) return dir;
-      if (va < vb) return -dir;
-      return 0;
-    });
-  }
-  const start = this.properties.page * this.properties.pageSize;
-  rows = rows.slice(start, start + this.properties.pageSize);
-  if (!rows.length) {
-    ctx.restore();
-    return;
-  }
-  let cols;
-  if (typeof rows[0] === 'object' && !Array.isArray(rows[0])) {
-    cols = Object.keys(rows[0]);
-  } else {
-    const len = Array.isArray(rows[0]) ? rows[0].length : 0;
-    cols = Array.from({ length: len }, (_, i) => String(i));
-  }
-  const colWidth = w / cols.length;
-  ctx.fillStyle = '#333';
-  ctx.fillRect(0, 0, w, 18);
-  ctx.fillStyle = '#fff';
-  ctx.font = '12px monospace';
-  cols.forEach((c, i) => ctx.fillText(c, i * colWidth + 4, 12));
-  const maxRows = Math.floor((h - 18) / 16);
-  for (let r = 0; r < Math.min(rows.length, maxRows); r++) {
-    const rowY = 18 + r * 16;
-    if (r % 2) {
-      ctx.fillStyle = '#2a2a2a';
-      ctx.fillRect(0, rowY, w, 16);
-    }
-    ctx.fillStyle = '#fff';
-    const row = rows[r];
-    cols.forEach((c, i) => {
-      const val = typeof row === 'object' && !Array.isArray(row) ? row[c] : row[i];
-      const text = val !== undefined ? String(val) : '';
-      ctx.fillText(text.slice(0, Math.floor(colWidth / 7)), i * colWidth + 4, rowY + 12);
-    });
-  }
+  ctx.translate(0, top);
+  drawTableView(ctx, this._data, this.properties, w, h);
   ctx.restore();
 };
 registerNode('viz/table', TableViewNode);

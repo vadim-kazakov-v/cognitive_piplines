@@ -47,6 +47,24 @@ function enableInteraction(node) {
   };
 }
 
+function disableNodeDrag(node) {
+  node.onMouseDown = function(e) {
+    const header = LiteGraph.NODE_TITLE_HEIGHT;
+    const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const limit = header + widgets;
+    const localX = e.canvasX - this.pos[0];
+    const localY = e.canvasY - this.pos[1];
+    const inResizeCorner =
+      localX > this.size[0] - 10 && localY > this.size[1] - 10;
+    if (localY < limit || inResizeCorner) return false;
+    this.captureInput(true);
+    return true;
+  };
+  node.onMouseMove = () => false;
+  node.onMouseUp = function() { this.captureInput(false); return false; };
+  node.onMouseWheel = () => true;
+}
+
 function VisualizerNode() {
   this.addInput('image', 'string');
   this.size = [200, 150];
