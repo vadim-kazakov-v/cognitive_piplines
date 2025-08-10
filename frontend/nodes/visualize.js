@@ -327,6 +327,7 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
     ctx.stroke();
   }
   ctx.restore();
+  this.setOutputData(0, this._img);
 };
 registerNode('viz/scatter3d', Scatter3DNode);
 
