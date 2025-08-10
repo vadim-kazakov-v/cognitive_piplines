@@ -101,6 +101,29 @@
     if (window.hljs) {
       hljs.highlightAll();
     }
+    // Adjust zoom sensitivity so scroll (mouse wheel) on the graph canvas
+    // feels smoother.
+    LGraphCanvas.prototype.processMouseWheel = function(e) {
+      if (this.graph && this.allow_dragcanvas) {
+        const delta = e.wheelDeltaY !== undefined ? e.wheelDeltaY : -60 * e.detail;
+        this.adjustMouseEvent(e);
+        const x = e.clientX;
+        const y = e.clientY;
+        if (!this.viewport || (x >= this.viewport[0] && x < this.viewport[0] + this.viewport[2] &&
+                               y >= this.viewport[1] && y < this.viewport[1] + this.viewport[3])) {
+          let scale = this.ds.scale;
+          if (delta > 0) {
+            scale *= 1.05; // smaller step for smoother zoom
+          } else if (delta < 0) {
+            scale *= 1 / 1.05;
+          }
+          this.ds.changeScale(scale, [e.clientX, e.clientY]);
+          this.graph.change();
+          e.preventDefault();
+          return false;
+        }
+      }
+    };
     const graph = new LGraph();
     const canvas = new LGraphCanvas("#graph", graph);
     canvas.render_shadows = false;
