@@ -51,23 +51,60 @@ function DescribeTableNode() {
 }
 DescribeTableNode.title = 'Describe Table';
 DescribeTableNode.icon = '📋';
-DescribeTableNode.prototype.onExecute = async function() {
+DescribeTableNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
-  if (!data || this._pending) return;
-  this._pending = true;
-  try {
-    const res = await fetch('http://localhost:8000/describe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data }),
-    });
-    const out = await res.json();
-    this.setOutputData(0, out);
-  } catch (err) {
-    console.error(err);
-  } finally {
-    this._pending = false;
-  }
+  if (!data) return;
+
+  const numericStats = values => {
+    const count = values.length;
+    if (!count) return {};
+    const mean = values.reduce((a, b) => a + b, 0) / count;
+    const variance = values.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / count;
+    return {
+      count,
+      mean,
+      std: Math.sqrt(variance),
+      min: Math.min(...values),
+      max: Math.max(...values),
+    };
+  };
+
+  const describeArray = arr => {
+    if (!Array.isArray(arr) || !arr.length) return {};
+    // handle array of numbers directly
+    if (typeof arr[0] === 'number') {
+      return numericStats(arr.filter(v => typeof v === 'number'));
+    }
+    const out = {};
+    const keys = Object.keys(arr[0]);
+    for (const key of keys) {
+      const column = arr
+        .map(row => row[key])
+        .filter(v => v !== undefined && v !== null);
+      if (!column.length) continue;
+      if (typeof column[0] === 'number') {
+        out[key] = numericStats(column);
+      } else {
+        const count = column.length;
+        const unique = new Set(column);
+        const freqMap = {};
+        let top = null;
+        let freq = 0;
+        for (const v of column) {
+          freqMap[v] = (freqMap[v] || 0) + 1;
+          if (freqMap[v] > freq) {
+            freq = freqMap[v];
+            top = v;
+          }
+        }
+        out[key] = { count, unique: unique.size, top, freq };
+      }
+    }
+    return out;
+  };
+
+  const out = describeArray(data);
+  this.setOutputData(0, out);
 };
 registerNode('data/describe', DescribeTableNode);
 
