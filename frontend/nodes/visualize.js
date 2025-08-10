@@ -20,6 +20,20 @@ function captureNodeImage(node, drawFunc) {
   return canvas.toDataURL();
 }
 
+const COLOR_PALETTE = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'];
+
+function labelColor(v) {
+  if (v === undefined || v === null) return '#7af';
+  if (typeof v === 'string') return v;
+  if (v === -1) return '#888';
+  return COLOR_PALETTE[v % COLOR_PALETTE.length];
+}
+
+function hexToRgb(hex) {
+  const num = parseInt(hex.slice(1), 16);
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+
 function BarChartNode() {
   this.addInput('data', 'array');
   this.addOutput('image', 'string');
@@ -74,6 +88,7 @@ registerNode('viz/bar', BarChartNode);
 
 function Scatter2DNode() {
   this.addInput('points', 'array');
+  this.addInput('color', 'array');
   this.addOutput('image', 'string');
   this.size = [200, 150];
   this.resizable = true;
@@ -100,6 +115,7 @@ Scatter2DNode.prototype.onExecute = function() {
   const pts = this.getInputData(0);
   if (!pts) return;
   this._pts = pts;
+  this._colors = this.getInputData(1);
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, Scatter2DNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
@@ -119,10 +135,11 @@ Scatter2DNode.prototype.onDrawBackground = function(ctx) {
   ctx.translate(this._offset[0], this._offset[1] + top);
   ctx.scale(this._zoom, this._zoom);
   drawPlotArea(ctx, w, h);
-  ctx.fillStyle = '#7af';
-  for (const p of this._pts) {
+  for (let i = 0; i < this._pts.length; i++) {
+    const p = this._pts[i];
     const x = ((p[0] - minX) / ((maxX - minX) || 1)) * w;
     const y = h - ((p[1] - minY) / ((maxY - minY) || 1)) * h;
+    ctx.fillStyle = labelColor(this._colors && this._colors[i]);
     ctx.beginPath();
     ctx.arc(x, y, 3, 0, Math.PI * 2);
     ctx.fill();
@@ -133,6 +150,7 @@ registerNode('viz/scatter2d', Scatter2DNode);
 
 function Scatter3DNode() {
   this.addInput('points', 'array');
+  this.addInput('color', 'array');
   this.addOutput('image', 'string');
   this.size = [200, 150];
   this.resizable = true;
@@ -190,6 +208,7 @@ Scatter3DNode.prototype.onExecute = function() {
   const pts = this.getInputData(0);
   if (!pts) return;
   this._pts = pts;
+  this._colors = this.getInputData(1);
   if (this._img) this.setOutputData(0, this._img);
   this.setDirtyCanvas(true, true);
 };
@@ -205,10 +224,10 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
     const gl = this._glcanvas.getContext('webgl', { preserveDrawingBuffer: true });
     this._gl = gl;
     const vs = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vs, 'attribute vec3 aPos;void main(){gl_Position=vec4(aPos,1.0);gl_PointSize=4.0;}');
+    gl.shaderSource(vs, 'attribute vec3 aPos;attribute vec3 aColor;varying vec3 vColor;void main(){vColor=aColor;gl_Position=vec4(aPos,1.0);gl_PointSize=4.0;}');
     gl.compileShader(vs);
     const fs = gl.createShader(gl.FRAGMENT_SHADER);
-    gl.shaderSource(fs, 'precision mediump float;void main(){gl_FragColor=vec4(0.48,0.82,1.0,1.0);}');
+    gl.shaderSource(fs, 'precision mediump float;varying vec3 vColor;void main(){gl_FragColor=vec4(vColor,1.0);}');
     gl.compileShader(fs);
     const program = gl.createProgram();
     gl.attachShader(program, vs);
@@ -217,7 +236,9 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
     gl.useProgram(program);
     this._program = program;
     this._posLoc = gl.getAttribLocation(program, 'aPos');
+    this._colorLoc = gl.getAttribLocation(program, 'aColor');
     this._buffer = gl.createBuffer();
+    this._colorBuffer = gl.createBuffer();
   }
   const gl = this._gl;
   gl.viewport(0, 0, w, h);
@@ -249,6 +270,8 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
   }
 
   const data = new Float32Array(pts.length * 3);
+  const colorData = new Float32Array(pts.length * 3);
+  const cols = this._colors || [];
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i];
     const px = Array.isArray(p) ? p[0] : p.x;
@@ -258,6 +281,10 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
     data[i * 3] = t[0];
     data[i * 3 + 1] = t[1];
     data[i * 3 + 2] = 0;
+    const rgb = hexToRgb(labelColor(cols[i]));
+    colorData[i * 3] = rgb[0] / 255;
+    colorData[i * 3 + 1] = rgb[1] / 255;
+    colorData[i * 3 + 2] = rgb[2] / 255;
   }
 
   gl.useProgram(this._program);
@@ -265,6 +292,12 @@ Scatter3DNode.prototype.onDrawBackground = function(ctx) {
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(this._posLoc);
   gl.vertexAttribPointer(this._posLoc, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, this._colorBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, colorData, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(this._colorLoc);
+  gl.vertexAttribPointer(this._colorLoc, 3, gl.FLOAT, false, 0, 0);
+
   gl.drawArrays(gl.POINTS, 0, pts.length);
 
   this._img = this._glcanvas.toDataURL();
