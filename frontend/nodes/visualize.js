@@ -219,3 +219,67 @@ HistogramNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/hist', HistogramNode);
 
+function TableViewNode() {
+  this.addInput('data', 'array');
+  this.size = [300, 200];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+}
+TableViewNode.title = 'Table';
+TableViewNode.icon = '📋';
+TableViewNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (!data) return;
+  this._data = data;
+  this.setDirtyCanvas(true, true);
+};
+TableViewNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._data) return;
+  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  ctx.fillStyle = '#222';
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = '#666';
+  ctx.strokeRect(0, 0, w, h);
+  const rows = Array.isArray(this._data) ? this._data : [this._data];
+  if (!rows.length) {
+    ctx.restore();
+    return;
+  }
+  let cols;
+  if (typeof rows[0] === 'object' && !Array.isArray(rows[0])) {
+    cols = Object.keys(rows[0]);
+  } else {
+    const len = Array.isArray(rows[0]) ? rows[0].length : 0;
+    cols = Array.from({ length: len }, (_, i) => String(i));
+  }
+  const colWidth = w / cols.length;
+  ctx.fillStyle = '#333';
+  ctx.fillRect(0, 0, w, 18);
+  ctx.fillStyle = '#fff';
+  ctx.font = '12px monospace';
+  cols.forEach((c, i) => ctx.fillText(c, i * colWidth + 4, 12));
+  const maxRows = Math.floor((h - 18) / 16);
+  for (let r = 0; r < Math.min(rows.length, maxRows); r++) {
+    const rowY = 18 + r * 16;
+    if (r % 2) {
+      ctx.fillStyle = '#2a2a2a';
+      ctx.fillRect(0, rowY, w, 16);
+    }
+    ctx.fillStyle = '#fff';
+    const row = rows[r];
+    cols.forEach((c, i) => {
+      const val = typeof row === 'object' && !Array.isArray(row) ? row[c] : row[i];
+      const text = val !== undefined ? String(val) : '';
+      ctx.fillText(text.slice(0, Math.floor(colWidth / 7)), i * colWidth + 4, rowY + 12);
+    });
+  }
+  ctx.restore();
+};
+registerNode('viz/table', TableViewNode);
+
