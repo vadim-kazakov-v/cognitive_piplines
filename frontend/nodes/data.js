@@ -45,7 +45,7 @@ registerNode('data/random', RandomDataNode);
 
 function DescribeTableNode() {
   this.addInput('data', 'array');
-  this.addOutput('stats', 'object');
+  this.addOutput('stats', 'array');
   this.color = '#222';
   this.bgcolor = '#444';
 }
@@ -73,7 +73,8 @@ DescribeTableNode.prototype.onExecute = function() {
     if (!Array.isArray(arr) || !arr.length) return {};
     // handle array of numbers directly
     if (typeof arr[0] === 'number') {
-      return numericStats(arr.filter(v => typeof v === 'number'));
+      // wrap numeric stats in an object with a default field name
+      return { value: numericStats(arr.filter(v => typeof v === 'number')) };
     }
     const out = {};
     const keys = Object.keys(arr[0]);
@@ -103,8 +104,36 @@ DescribeTableNode.prototype.onExecute = function() {
     return out;
   };
 
-  const out = describeArray(data);
+  const outObj = describeArray(data);
+  // convert {col: stats} into array of row objects for easier viewing
+  const out = Object.entries(outObj).map(([col, stats]) => ({ field: col, ...stats }));
+  this._stats = out;
+  const top =
+    LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const lineH = 14;
+  this.size[1] = top + lineH * Math.min(out.length, 10);
+  this.setDirtyCanvas(true, true);
   this.setOutputData(0, out);
+};
+DescribeTableNode.prototype.onDrawForeground = function(ctx) {
+  if (!this._stats) return;
+  const top =
+    LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const lineH = 14;
+  ctx.save();
+  ctx.font = '12px monospace';
+  ctx.fillStyle = '#fff';
+  let y = top + lineH;
+  for (const row of this._stats.slice(0, 10)) {
+    const text = Object.entries(row)
+      .map(([k, v]) => `${k}: ${typeof v === 'number' ? v.toFixed(2) : v}`)
+      .join(' ');
+    ctx.fillText(text, 4, y);
+    y += lineH;
+  }
+  ctx.restore();
 };
 registerNode('data/describe', DescribeTableNode);
 
