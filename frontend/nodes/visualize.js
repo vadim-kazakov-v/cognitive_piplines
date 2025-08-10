@@ -131,6 +131,135 @@ Scatter2DNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/scatter2d', Scatter2DNode);
 
+function Scatter3DNode() {
+  this.addInput('points', 'array');
+  this.size = [200, 150];
+  this.resizable = true;
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this._rot = [0, 0];
+  this._zoom = 1;
+  this.addWidget('button', 'save', null, () => {
+    if (!this._glcanvas) return;
+    const a = document.createElement('a');
+    a.href = this._glcanvas.toDataURL();
+    a.download = 'scatter3d.png';
+    a.click();
+  });
+  this.onMouseDown = function(e) {
+    const header = LiteGraph.NODE_TITLE_HEIGHT;
+    const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const limit = header + widgets;
+    const localX = e.canvasX - this.pos[0];
+    const localY = e.canvasY - this.pos[1];
+    const inResize = localX > this.size[0] - 10 && localY > this.size[1] - 10;
+    if (localY < limit || inResize) return false;
+    this._dragging = true;
+    this._last = [e.canvasX, e.canvasY];
+    this.captureInput(true);
+    return true;
+  };
+  this.onMouseMove = function(e) {
+    if (this._dragging) {
+      const dx = e.canvasX - this._last[0];
+      const dy = e.canvasY - this._last[1];
+      this._rot[0] += dy * 0.01;
+      this._rot[1] += dx * 0.01;
+      this._last = [e.canvasX, e.canvasY];
+      this.setDirtyCanvas(true, true);
+      return true;
+    }
+    return false;
+  };
+  this.onMouseUp = function() {
+    this._dragging = false;
+    this.captureInput(false);
+    return false;
+  };
+  this.onMouseWheel = function(e) {
+    const delta = e.wheelDeltaY ? e.wheelDeltaY : -e.deltaY;
+    this._zoom *= delta > 0 ? 1.1 : 0.9;
+    this.setDirtyCanvas(true, true);
+    return true;
+  };
+}
+Scatter3DNode.title = 'Scatter3D';
+Scatter3DNode.icon = '🟦';
+Scatter3DNode.prototype.onExecute = function() {
+  const pts = this.getInputData(0);
+  if (!pts) return;
+  this._pts = pts;
+  this.setDirtyCanvas(true, true);
+};
+Scatter3DNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._pts) return;
+  const top = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  if (!this._glcanvas || this._glcanvas.width !== w || this._glcanvas.height !== h) {
+    this._glcanvas = document.createElement('canvas');
+    this._glcanvas.width = w;
+    this._glcanvas.height = h;
+    const gl = this._glcanvas.getContext('webgl');
+    this._gl = gl;
+    const vs = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vs, 'attribute vec3 aPos;void main(){gl_Position=vec4(aPos,1.0);gl_PointSize=4.0;}');
+    gl.compileShader(vs);
+    const fs = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fs, 'precision mediump float;void main(){gl_FragColor=vec4(0.48,0.82,1.0,1.0);}');
+    gl.compileShader(fs);
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    gl.useProgram(program);
+    this._program = program;
+    this._posLoc = gl.getAttribLocation(program, 'aPos');
+    this._buffer = gl.createBuffer();
+  }
+  const gl = this._gl;
+  gl.viewport(0, 0, w, h);
+  gl.clearColor(0.133, 0.133, 0.133, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  const pts = this._pts;
+  const xs = pts.map(p => p[0]);
+  const ys = pts.map(p => p[1]);
+  const zs = pts.map(p => p[2]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const minZ = Math.min(...zs), maxZ = Math.max(...zs);
+  const data = new Float32Array(pts.length * 3);
+  const rx = this._rot[0], ry = this._rot[1], scale = this._zoom;
+  const cosX = Math.cos(rx), sinX = Math.sin(rx);
+  const cosY = Math.cos(ry), sinY = Math.sin(ry);
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    let x = (p[0] - minX) / ((maxX - minX) || 1) * 2 - 1;
+    let y = (p[1] - minY) / ((maxY - minY) || 1) * 2 - 1;
+    let z = (p[2] - minZ) / ((maxZ - minZ) || 1) * 2 - 1;
+    let y1 = y * cosX - z * sinX;
+    let z1 = y * sinX + z * cosX;
+    let x2 = x * cosY + z1 * sinY;
+    let z2 = -x * sinY + z1 * cosY;
+    x2 *= scale;
+    y1 *= scale;
+    const depth = z2 + 3;
+    data[i * 3] = x2 / depth;
+    data[i * 3 + 1] = y1 / depth;
+    data[i * 3 + 2] = 0;
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, this._buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(this._posLoc);
+  gl.vertexAttribPointer(this._posLoc, 3, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.POINTS, 0, pts.length);
+  ctx.save();
+  ctx.translate(0, top);
+  ctx.drawImage(this._glcanvas, 0, 0);
+  ctx.restore();
+};
+registerNode('viz/scatter3d', Scatter3DNode);
+
 function LineChartNode() {
   this.addInput('data', 'array');
   this.addOutput('image', 'string');
