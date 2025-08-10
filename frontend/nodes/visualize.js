@@ -222,9 +222,42 @@ registerNode('viz/hist', HistogramNode);
 function TableViewNode() {
   this.addInput('data', 'array');
   this.size = [300, 200];
+  this.resizable = true;
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
+  this.properties = {
+    filterColumn: '',
+    filterValue: '',
+    sortColumn: '',
+    sortOrder: 'asc',
+    page: 0,
+    pageSize: 10,
+  };
+  this.addWidget('text', 'filter col', this.properties.filterColumn, v => {
+    this.properties.filterColumn = v;
+    this.setDirtyCanvas(true, true);
+  });
+  this.addWidget('text', 'filter val', this.properties.filterValue, v => {
+    this.properties.filterValue = v;
+    this.setDirtyCanvas(true, true);
+  });
+  this.addWidget('text', 'sort col', this.properties.sortColumn, v => {
+    this.properties.sortColumn = v;
+    this.setDirtyCanvas(true, true);
+  });
+  this.addWidget('combo', 'order', this.properties.sortOrder, v => {
+    this.properties.sortOrder = v;
+    this.setDirtyCanvas(true, true);
+  }, { values: ['asc', 'desc'] });
+  this.addWidget('number', 'page', this.properties.page, v => {
+    this.properties.page = Math.max(0, Math.floor(v));
+    this.setDirtyCanvas(true, true);
+  }, { min: 0, step: 1 });
+  this.addWidget('number', 'pageSize', this.properties.pageSize, v => {
+    this.properties.pageSize = Math.max(1, Math.floor(v));
+    this.setDirtyCanvas(true, true);
+  }, { min: 1, step: 1 });
 }
 TableViewNode.title = 'Table';
 TableViewNode.icon = '📋';
@@ -246,7 +279,35 @@ TableViewNode.prototype.onDrawBackground = function(ctx) {
   ctx.fillRect(0, 0, w, h);
   ctx.strokeStyle = '#666';
   ctx.strokeRect(0, 0, w, h);
-  const rows = Array.isArray(this._data) ? this._data : [this._data];
+  let rows = Array.isArray(this._data) ? this._data.slice() : [this._data];
+  if (!rows.length) {
+    ctx.restore();
+    return;
+  }
+  if (this.properties.filterColumn && this.properties.filterValue) {
+    rows = rows.filter(r => {
+      const val = typeof r === 'object' && !Array.isArray(r)
+        ? r[this.properties.filterColumn]
+        : r[Number(this.properties.filterColumn)];
+      return val !== undefined && String(val).includes(this.properties.filterValue);
+    });
+  }
+  if (this.properties.sortColumn) {
+    const col = this.properties.sortColumn;
+    const dir = this.properties.sortOrder === 'desc' ? -1 : 1;
+    rows.sort((a, b) => {
+      const va = typeof a === 'object' && !Array.isArray(a) ? a[col] : a[Number(col)];
+      const vb = typeof b === 'object' && !Array.isArray(b) ? b[col] : b[Number(col)];
+      if (va == null && vb == null) return 0;
+      if (va == null) return -dir;
+      if (vb == null) return dir;
+      if (va > vb) return dir;
+      if (va < vb) return -dir;
+      return 0;
+    });
+  }
+  const start = this.properties.page * this.properties.pageSize;
+  rows = rows.slice(start, start + this.properties.pageSize);
   if (!rows.length) {
     ctx.restore();
     return;
