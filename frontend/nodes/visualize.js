@@ -511,9 +511,16 @@ function TableViewNode() {
   input.placeholder = 'search';
   input.style.position = 'absolute';
   input.style.zIndex = 10;
+  input.style.background = '#444';
+  input.style.border = '1px solid #666';
+  input.style.color = '#fff';
+  input.style.borderRadius = '0';
+  input.style.boxSizing = 'border-box';
+  input.style.padding = '2px 4px';
   input.addEventListener('input', () => {
     this.properties.search = input.value;
     this.properties.page = 0;
+    adjustTableSize.call(this);
     this.setDirtyCanvas(true, true);
   });
   this._searchInput = input;
@@ -533,6 +540,7 @@ function TableViewNode() {
   this.onAdded = function() {
     this._searchInput.value = this.properties.search;
     canvas.canvas.parentNode.appendChild(this._searchInput);
+    adjustTableSize.call(this);
     updatePos();
   };
   this.onRemoved = function() {
@@ -543,7 +551,8 @@ function TableViewNode() {
     if (!this._tableState) return false;
     const header = LiteGraph.NODE_TITLE_HEIGHT;
     const widgetsH = LiteGraph.NODE_WIDGET_HEIGHT;
-    const limit = header + widgetsH;
+    const gap = 8;
+    const limit = header + widgetsH + gap;
     const localX = e.canvasX - this.pos[0];
     const localY = e.canvasY - this.pos[1];
     if (localY < limit || localY > this.size[1]) return false;
@@ -584,13 +593,14 @@ TableViewNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
   this._data = data;
+  adjustTableSize.call(this);
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, TableViewNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
 };
 TableViewNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data) return;
-  const top = LiteGraph.NODE_WIDGET_HEIGHT + 4;
+  const top = LiteGraph.NODE_WIDGET_HEIGHT + 8;
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
@@ -599,5 +609,23 @@ TableViewNode.prototype.onDrawBackground = function(ctx) {
   drawTableView(ctx, this._data, this.properties, w, h, this._tableState);
   ctx.restore();
 };
+
+function adjustTableSize() {
+  if (!this._data) return;
+  let rows = Array.isArray(this._data) ? this._data.slice() : [this._data];
+  if (this.properties.search) {
+    const s = this.properties.search.toLowerCase();
+    rows = rows.filter(r => {
+      const vals = typeof r === 'object' && !Array.isArray(r) ? Object.values(r) : r;
+      return vals && vals.some(v => String(v).toLowerCase().includes(s));
+    });
+  }
+  const headerH = 18;
+  const paginationH = 20;
+  const visible = Math.min(rows.length, this.properties.pageSize);
+  const tableH = headerH + visible * 16 + paginationH;
+  const top = LiteGraph.NODE_WIDGET_HEIGHT + 8;
+  this.size[1] = top + tableH;
+}
 registerNode('viz/table', TableViewNode);
 
