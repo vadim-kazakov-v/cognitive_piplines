@@ -568,6 +568,67 @@ result = {'nodes': nodes, 'links': links}`;
       sankey.connect(0, view, 0);
     }
 
+    function presetRandomGraph() {
+      const gen = LiteGraph.createNode('data/random_graph');
+      gen.pos = [50, 150];
+      const viz = LiteGraph.createNode('viz/graph');
+      viz.pos = [250, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [450, 150];
+      graph.add(gen);
+      graph.add(viz);
+      graph.add(view);
+      gen.connect(0, viz, 0);
+      viz.connect(0, view, 0);
+    }
+
+    function presetGlyphs() {
+      const rand = LiteGraph.createNode('data/random');
+      rand.pos = [50, 150];
+      rand.properties.columns = 4;
+      rand.properties.count = 9;
+      const py = LiteGraph.createNode('util/python');
+      py.pos = [250, 150];
+      py.properties.code = `[ [r.col1, r.col2, r.col3, r.col4] for r in data ]`;
+      const glyphs = LiteGraph.createNode('viz/glyphs');
+      glyphs.pos = [450, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [650, 150];
+      graph.add(rand);
+      graph.add(py);
+      graph.add(glyphs);
+      graph.add(view);
+      rand.connect(0, py, 0);
+      py.connect(0, glyphs, 0);
+      glyphs.connect(0, view, 0);
+    }
+
+    function presetRandomScatter() {
+      const rand = LiteGraph.createNode('data/random');
+      rand.pos = [50, 150];
+      rand.properties.columns = 2;
+      rand.properties.count = 50;
+      const toPts = LiteGraph.createNode('util/python');
+      toPts.pos = [250, 150];
+      toPts.properties.code = `[ [r.col1, r.col2] for r in data ]`;
+      const labels = LiteGraph.createNode('data/random_labels');
+      labels.pos = [250, 300];
+      const scatter = LiteGraph.createNode('viz/scatter2d');
+      scatter.pos = [450, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [650, 150];
+      graph.add(rand);
+      graph.add(toPts);
+      graph.add(labels);
+      graph.add(scatter);
+      graph.add(view);
+      rand.connect(0, toPts, 0);
+      rand.connect(0, labels, 0);
+      toPts.connect(0, scatter, 0);
+      labels.connect(0, scatter, 1);
+      scatter.connect(0, view, 0);
+    }
+
     const presets = [
       { name: 'Simple UMAP', fn: presetSimpleUMAP },
       { name: 'UMAP + DBSCAN', fn: presetUmapDbscanPlot },
@@ -577,7 +638,10 @@ result = {'nodes': nodes, 'links': links}`;
       { name: 'UMAP 3D', fn: presetUmap3D },
       { name: 'Violin', fn: presetViolin },
       { name: 'Pie Chart', fn: presetPieChart },
-      { name: 'Sankey', fn: presetSankey }
+      { name: 'Sankey', fn: presetSankey },
+      { name: 'Random Graph', fn: presetRandomGraph },
+      { name: 'Glyphs', fn: presetGlyphs },
+      { name: 'Random Scatter', fn: presetRandomScatter }
     ];
 
     const presetList = document.getElementById('preset-list');

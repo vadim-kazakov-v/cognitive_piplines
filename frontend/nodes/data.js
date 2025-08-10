@@ -241,3 +241,72 @@ DescribeTableNode.prototype.onDrawForeground = function(ctx) {
 };
 registerNode('data/describe', DescribeTableNode);
 
+function RandomLabelsNode() {
+  this.addInput('data', 'array');
+  this.addOutput('labels', 'array');
+  this.addProperty('count', 10);
+  this.addProperty('classes', 3);
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('slider', 'count', this.properties.count, v => (this.properties.count = v), {
+    min: 1,
+    max: 100,
+    step: 1,
+    precision: 0,
+  });
+  this.addWidget('slider', 'classes', this.properties.classes, v => (this.properties.classes = v), {
+    min: 1,
+    max: 20,
+    step: 1,
+    precision: 0,
+  });
+}
+RandomLabelsNode.title = 'Random Labels';
+RandomLabelsNode.icon = '🏷️';
+RandomLabelsNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  const count = Array.isArray(data)
+    ? data.length
+    : Math.max(0, Math.round(this.properties.count));
+  const cls = Math.max(1, Math.round(this.properties.classes));
+  const out = Array.from({ length: count }, () => Math.floor(Math.random() * cls));
+  this.setOutputData(0, out);
+};
+registerNode('data/random_labels', RandomLabelsNode);
+
+function RandomGraphNode() {
+  this.addOutput('graph', 'object');
+  this.addProperty('nodes', 5);
+  this.addProperty('links', 5);
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('slider', 'nodes', this.properties.nodes, v => (this.properties.nodes = v), {
+    min: 2,
+    max: 50,
+    step: 1,
+    precision: 0,
+  });
+  this.addWidget('slider', 'links', this.properties.links, v => (this.properties.links = v), {
+    min: 0,
+    max: 200,
+    step: 1,
+    precision: 0,
+  });
+}
+RandomGraphNode.title = 'Random Graph';
+RandomGraphNode.icon = '🕸️';
+RandomGraphNode.prototype.onExecute = function() {
+  const n = Math.max(0, Math.round(this.properties.nodes));
+  const m = Math.max(0, Math.round(this.properties.links));
+  const nodes = Array.from({ length: n }, (_, i) => `N${i}`);
+  const links = [];
+  for (let i = 0; i < m; i++) {
+    const s = Math.floor(Math.random() * n);
+    let t = Math.floor(Math.random() * n);
+    if (t === s) t = (t + 1) % n;
+    links.push({ source: s, target: t });
+  }
+  this.setOutputData(0, { nodes, links });
+};
+registerNode('data/random_graph', RandomGraphNode);
+
