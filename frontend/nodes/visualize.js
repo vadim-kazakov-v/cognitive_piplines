@@ -809,3 +809,67 @@ function adjustTableSize() {
 }
 registerNode('viz/table', TableViewNode);
 
+function LissajousNode() {
+  this.addInput('x', 'array');
+  this.addInput('y', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '💾', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    LissajousNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'lissajous.png';
+    a.click();
+  }, { width: 30 });
+}
+LissajousNode.title = 'Lissajous';
+LissajousNode.icon = '∞';
+LissajousNode.prototype.onExecute = function() {
+  const x = this.getInputData(0);
+  const y = this.getInputData(1);
+  if (!x || !y) return;
+  this._x = x;
+  this._y = y;
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, LissajousNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+LissajousNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._x || !this._y) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const xs = this._x;
+  const ys = this._y;
+  const n = Math.min(xs.length, ys.length);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  ctx.strokeStyle = '#7af';
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const px = ((xs[i] - minX) / ((maxX - minX) || 1)) * w;
+    const py = h - ((ys[i] - minY) / ((maxY - minY) || 1)) * h;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.restore();
+};
+registerNode('viz/lissajous', LissajousNode);
+

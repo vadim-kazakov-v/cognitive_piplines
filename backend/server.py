@@ -216,6 +216,50 @@ def gmm(matrix: Matrix) -> dict:
     return {"labels": labels, "means": means}
 
 
+@app.post("/isolation_forest")
+def isolation_forest(matrix: Matrix) -> list[int]:
+    """Detect outliers using the Isolation Forest algorithm."""
+
+    from sklearn.ensemble import IsolationForest
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if data.size == 0:
+        return []
+
+    model = IsolationForest(**params).fit(data)
+    labels = model.predict(data)
+    return labels.tolist()
+
+
+@app.post("/lof")
+def local_outlier_factor(matrix: Matrix) -> list[int]:
+    """Detect outliers using Local Outlier Factor."""
+
+    from sklearn.neighbors import LocalOutlierFactor
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    n_samples = len(data)
+    if n_samples == 0:
+        return []
+
+    n_neighbors = int(params.get("n_neighbors", 20))
+    n_neighbors = min(max(n_neighbors, 1), n_samples - 1) if n_samples > 1 else 1
+    params["n_neighbors"] = n_neighbors
+    model = LocalOutlierFactor(**params)
+    labels = model.fit_predict(data)
+    return labels.tolist()
+
+
 @app.post("/pca")
 def pca(matrix: Matrix) -> list[list[float]]:
     """Compute a PCA embedding for the given data."""

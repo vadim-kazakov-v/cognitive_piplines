@@ -153,3 +153,24 @@ PcaNode.icon = '🧮';
 PcaNode.prototype = Object.create(ApiNode.prototype);
 registerNode('ml/pca', PcaNode);
 
+function IsolationForestNode() {
+  ApiNode.call(this, 'isolation_forest', 'Isolation Forest', {
+    n_estimators: { value: 100, min: 10, max: 300, step: 1 },
+    contamination: { value: 0.1, min: 0, max: 0.5, step: 0.01 },
+  });
+}
+IsolationForestNode.title = 'Isolation Forest';
+IsolationForestNode.icon = '🌲';
+IsolationForestNode.prototype = Object.create(ApiNode.prototype);
+registerNode('ml/isolation_forest', IsolationForestNode);
+
+function LofNode() {
+  ApiNode.call(this, 'lof', 'Local Outlier Factor', {
+    n_neighbors: { value: 20, min: 1, max: 50, step: 1 },
+  });
+}
+LofNode.title = 'Local Outlier Factor';
+LofNode.icon = '🚨';
+LofNode.prototype = Object.create(ApiNode.prototype);
+registerNode('ml/lof', LofNode);
+

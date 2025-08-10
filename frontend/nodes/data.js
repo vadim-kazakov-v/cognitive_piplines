@@ -75,6 +75,83 @@ RandomDataNode.prototype.onExecute = function() {
 };
 registerNode('data/random', RandomDataNode);
 
+function RandomSeriesNode() {
+  this.addOutput('series', 'array');
+  this.addProperty('length', 100);
+  this.addProperty('scale', 1);
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('slider', 'length', this.properties.length, v => (this.properties.length = v), {
+    min: 1,
+    max: 1000,
+    step: 1,
+    precision: 0,
+  });
+  this.addWidget('slider', 'scale', this.properties.scale, v => (this.properties.scale = v), {
+    min: 0,
+    max: 10,
+    step: 0.1,
+  });
+}
+RandomSeriesNode.title = 'Random Series';
+RandomSeriesNode.icon = '📈';
+RandomSeriesNode.prototype.onExecute = function() {
+  const len = Math.max(0, Math.round(this.properties.length));
+  const scale = this.properties.scale;
+  let value = 0;
+  const out = [];
+  for (let i = 0; i < len; i++) {
+    value += (Math.random() * 2 - 1) * scale;
+    out.push(value);
+  }
+  this.setOutputData(0, out);
+};
+registerNode('data/random_series', RandomSeriesNode);
+
+function SineWaveNode() {
+  this.addOutput('series', 'array');
+  this.addProperty('length', 100);
+  this.addProperty('amplitude', 1);
+  this.addProperty('frequency', 1);
+  this.addProperty('phase', 0);
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('slider', 'length', this.properties.length, v => (this.properties.length = v), {
+    min: 1,
+    max: 1000,
+    step: 1,
+    precision: 0,
+  });
+  this.addWidget('slider', 'amplitude', this.properties.amplitude, v => (this.properties.amplitude = v), {
+    min: 0,
+    max: 10,
+    step: 0.1,
+  });
+  this.addWidget('slider', 'frequency', this.properties.frequency, v => (this.properties.frequency = v), {
+    min: 0.1,
+    max: 10,
+    step: 0.1,
+  });
+  this.addWidget('slider', 'phase', this.properties.phase, v => (this.properties.phase = v), {
+    min: 0,
+    max: Math.PI * 2,
+    step: 0.1,
+  });
+}
+SineWaveNode.title = 'Sine Wave';
+SineWaveNode.icon = '🔊';
+SineWaveNode.prototype.onExecute = function() {
+  const { length, amplitude, frequency, phase } = this.properties;
+  const len = Math.max(0, Math.round(length));
+  const out = [];
+  for (let i = 0; i < len; i++) {
+    const t = i / len;
+    out.push(amplitude * Math.sin(2 * Math.PI * frequency * t + phase));
+  }
+  this.setOutputData(0, out);
+};
+registerNode('data/sine', SineWaveNode);
+
 function DescribeTableNode() {
   this.addInput('data', 'array');
   this.addOutput('stats', 'array');
