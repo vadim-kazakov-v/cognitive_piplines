@@ -4,6 +4,8 @@ function ApiNode(endpoint, title, params) {
   this.addOutput('result', 'array');
   this.title = title;
   this.properties = {};
+   this.color = '#222';
+   this.bgcolor = '#444';
   this._paramOpts = params || {};
   if (params) {
     for (const key in params) {

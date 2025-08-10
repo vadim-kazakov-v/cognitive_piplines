@@ -1,5 +1,7 @@
 function LogNode() {
   this.addInput('data', 'array');
+  this.color = '#222';
+  this.bgcolor = '#444';
 }
 LogNode.title = 'Log';
 LogNode.icon = '📝';
