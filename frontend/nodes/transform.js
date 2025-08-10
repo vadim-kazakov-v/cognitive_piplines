@@ -122,6 +122,49 @@ OneHotNode.prototype.onExecute = function() {
 };
 registerNode('transform/onehot', OneHotNode);
 
+function LabelEncodeNode() {
+  this.addInput('data', 'array');
+  this.addOutput('data', 'array');
+  this.addProperty('field', 'Sex');
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.fieldWidget = this.addWidget('combo', 'field', this.properties.field, v => (this.properties.field = v), { values: [] });
+}
+LabelEncodeNode.title = 'Label Encode';
+LabelEncodeNode.icon = '🔢';
+LabelEncodeNode.prototype.updateColumns = function(data) {
+  if (!Array.isArray(data) || !data.length) return;
+  const cols = Object.keys(data[0]);
+  if (this._columns && cols.join(',') === this._columns.join(',')) return;
+  this._columns = cols;
+
+  if (this.fieldWidget) {
+    this.fieldWidget.options.values = cols;
+    if (!cols.includes(this.properties.field)) {
+      this.properties.field = cols[0] || '';
+      this.fieldWidget.value = this.properties.field;
+    }
+  }
+
+  this.setSize(this.computeSize());
+};
+
+LabelEncodeNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (!data) return;
+
+  this.updateColumns(data);
+
+  const field = this.properties.field;
+  if (!field) return;
+  const categories = Array.from(new Set(data.map(r => r[field])));
+  const mapping = {};
+  categories.forEach((cat, i) => (mapping[cat] = i));
+  const result = data.map(row => ({ [field]: mapping[row[field]] }));
+  this.setOutputData(0, result);
+};
+registerNode('transform/labelencode', LabelEncodeNode);
+
 function JoinDataFramesNode() {
   this.addInput('left', 'array');
   this.addInput('right', 'array');
