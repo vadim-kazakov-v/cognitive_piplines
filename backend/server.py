@@ -70,7 +70,12 @@ def tsne(matrix: Matrix) -> list[list[float]]:
         return [[0.0, 0.0] for _ in range(n_samples)]
 
     # ensure perplexity is valid for the number of samples
-    perplexity = min(float(params.get("perplexity", 30)), n_samples - 1)
+    perplexity_raw = params.get("perplexity", 30)
+    try:
+        perplexity = float(perplexity_raw)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid perplexity: {exc}")
+    perplexity = max(1.0, min(perplexity, n_samples - 1))
     params["perplexity"] = perplexity
 
     result = TSNE(n_components=2, **params).fit_transform(data)
