@@ -8,7 +8,8 @@ function enableInteraction(node) {
     const localY = e.canvasy - this.pos[1];
     if (localY < limit) {
       // allow dragging the node itself from the title or widget area
-      return; // do not capture
+      // by letting LiteGraph handle the event
+      return false;
     }
     this._dragging = true;
     this._last = [e.canvasx, e.canvasy];
@@ -20,13 +21,15 @@ function enableInteraction(node) {
       this._offset[0] += e.canvasx - this._last[0];
       this._offset[1] += e.canvasy - this._last[1];
       this._last = [e.canvasx, e.canvasy];
-      this.setDirtyCanvas(true);
+      this.setDirtyCanvas(true, true);
       return true;
     }
+    return false;
   };
   node.onMouseUp = function() {
     this._dragging = false;
     this.captureInput(false);
+    return false;
   };
   node.onMouseWheel = function(e) {
     const delta = e.wheelDeltaY ? e.wheelDeltaY : -e.deltaY;
@@ -36,7 +39,7 @@ function enableInteraction(node) {
     this._offset[0] -= x * (scale - 1);
     this._offset[1] -= y * (scale - 1);
     this._zoom *= scale;
-    this.setDirtyCanvas(true);
+    this.setDirtyCanvas(true, true);
     return true;
   };
 }
@@ -54,7 +57,7 @@ VisualizerNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
   if (!data) return;
   this._data = data;
-  this.setDirtyCanvas(true);
+  this.setDirtyCanvas(true, true);
 };
 VisualizerNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data) return;

@@ -226,12 +226,12 @@
         node.onExecute = async function(...args) {
           const prev = this.color;
           this.color = '#888';
-          this.setDirtyCanvas(true);
+          this.setDirtyCanvas(true, true);
           try {
             return await origExec.apply(this, args);
           } finally {
             this.color = prev;
-            this.setDirtyCanvas(true);
+            this.setDirtyCanvas(true, true);
           }
         };
       }
