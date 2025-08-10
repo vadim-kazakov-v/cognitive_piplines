@@ -184,8 +184,13 @@
     document.getElementById('run-btn').addEventListener('click', () => {
       graph.start();
     });
-    document.getElementById('step-btn').addEventListener('click', () => {
+    document.getElementById('step-btn').addEventListener('click', async () => {
       graph.runStep(1);
+      let safety = 0;
+      while (graph._nodes.some(n => n._pending) && safety++ < 50) {
+        await new Promise(resolve => requestAnimationFrame(resolve));
+        graph.runStep(1);
+      }
     });
     document.getElementById('stop-btn').addEventListener('click', () => {
       graph.stop();
