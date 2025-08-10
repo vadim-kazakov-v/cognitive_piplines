@@ -1272,6 +1272,7 @@ registerNode('viz/graph', GraphVizNode);
 
 function GlyphsNode() {
   this.addInput('data', 'array');
+  this.addInput('color', 'array');
   this.addOutput('image', 'string');
   this.size = [300, 200];
   this._zoom = 1;
@@ -1309,6 +1310,7 @@ GlyphsNode.prototype.onExecute = function() {
   }
 
   this._data = data;
+  this._colors = this.getInputData(1);
   const dims = data[0] ? data[0].length : 0;
   const mins = Array(dims).fill(Infinity);
   const maxs = Array(dims).fill(-Infinity);
@@ -1356,7 +1358,7 @@ GlyphsNode.prototype.onDrawBackground = function(ctx) {
       else ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.strokeStyle = '#7af';
+    ctx.strokeStyle = labelColor(this._colors && this._colors[idx]);
     ctx.stroke();
   });
   ctx.restore();
