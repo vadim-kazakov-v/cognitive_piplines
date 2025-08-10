@@ -56,7 +56,10 @@ def tsne(matrix: Matrix) -> list[list[float]]:
     from sklearn.manifold import TSNE
 
     params = matrix.params or {}
-    data = np.asarray(matrix.data, dtype=float)
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     n_samples = data.shape[0]
 
     if n_samples < 2:
