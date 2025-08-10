@@ -102,3 +102,28 @@ OneHotNode.prototype.onExecute = function() {
 };
 registerNode('transform/onehot', OneHotNode);
 
+function JoinDataFramesNode() {
+  this.addInput('left', 'array');
+  this.addInput('right', 'array');
+  this.addOutput('data', 'array');
+  this.color = '#222';
+  this.bgcolor = '#444';
+}
+JoinDataFramesNode.title = 'Join DataFrames';
+JoinDataFramesNode.icon = '🔗';
+JoinDataFramesNode.prototype.onExecute = function() {
+  const left = this.getInputData(0);
+  const right = this.getInputData(1);
+  if (!Array.isArray(left) || !Array.isArray(right)) return;
+  if (left.length !== right.length) return;
+  const out = left.map((row, i) => {
+    const other = right[i];
+    if (Array.isArray(row) && Array.isArray(other)) return row.concat(other);
+    if (row && typeof row === 'object' && other && typeof other === 'object')
+      return { ...row, ...other };
+    return [row, other];
+  });
+  this.setOutputData(0, out);
+};
+registerNode('transform/join', JoinDataFramesNode);
+
