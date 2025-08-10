@@ -10,8 +10,24 @@ function ApiNode(endpoint, title, params) {
   if (params) {
     for (const key in params) {
       const opt = params[key];
+      // ensure integer-only params are displayed and stored as integers
+      if ((opt.step === undefined || opt.step === 1 || opt.step === 1.0) && opt.precision === undefined) {
+        opt.precision = 0;
+      }
       this.properties[key] = opt.value;
-      this.addWidget('slider', key, opt.value, v => (this.properties[key] = v), opt);
+      this.addWidget(
+        'slider',
+        key,
+        opt.value,
+        v => {
+          if (opt.step === undefined || opt.step === 1 || opt.step === 1.0) {
+            v = Math.round(v);
+          }
+          this.properties[key] = v;
+          return v;
+        },
+        opt,
+      );
     }
   }
 }
