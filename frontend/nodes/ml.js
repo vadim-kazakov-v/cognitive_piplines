@@ -63,7 +63,10 @@ TsneNode.prototype = Object.create(ApiNode.prototype);
 registerNode('ml/tsne', TsneNode);
 
 function UmapNode() {
-  ApiNode.call(this, 'umap', 'UMAP', { n_neighbors: { value: 15, min: 2, max: 50 } });
+  ApiNode.call(this, 'umap', 'UMAP', {
+    n_neighbors: { value: 15, min: 2, max: 50 },
+    n_components: { value: 2, min: 2, max: 3, step: 1 },
+  });
 }
 UmapNode.title = 'UMAP';
 UmapNode.icon = '🌐';
