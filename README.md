@@ -19,7 +19,7 @@ The API will be available at `http://localhost:8000`. A health check is exposed 
 Additional endpoints provide machine learning helpers used by the UI:
 
 - `/tsne` – dimensionality reduction via t‑SNE
-- `/umap` – dimensionality reduction via UMAP
+- `/umap` – dimensionality reduction via UMAP (set `n_components` to 2 or 3)
 - `/dbscan` – clustering with DBSCAN
 
 ## Frontend

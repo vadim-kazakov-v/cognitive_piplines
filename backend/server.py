@@ -83,11 +83,14 @@ def umap(matrix: Matrix) -> list[list[float]]:
         raise HTTPException(status_code=400, detail=str(exc))
     n_samples = data.shape[0]
 
+    n_components = int(params.pop("n_components", 2))
+    n_components = min(max(n_components, 2), 3)
+
     if n_samples < 3:
-        return [[0.0, 0.0] for _ in range(n_samples)]
+        return [[0.0] * n_components for _ in range(n_samples)]
 
     params["n_neighbors"] = min(params.get("n_neighbors", 15), n_samples - 1)
-    embedding = umap.UMAP(n_components=2, **params).fit_transform(data)
+    embedding = umap.UMAP(n_components=n_components, **params).fit_transform(data)
     return embedding.tolist()
 
 
