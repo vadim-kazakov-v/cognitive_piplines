@@ -587,19 +587,14 @@ result = {'nodes': nodes, 'links': links}`;
       rand.pos = [50, 150];
       rand.properties.columns = 4;
       rand.properties.count = 9;
-      const py = LiteGraph.createNode('util/python');
-      py.pos = [250, 150];
-      py.properties.code = `[ [r.col1, r.col2, r.col3, r.col4] for r in data ]`;
       const glyphs = LiteGraph.createNode('viz/glyphs');
-      glyphs.pos = [450, 150];
+      glyphs.pos = [250, 150];
       const view = LiteGraph.createNode('viz/view');
-      view.pos = [650, 150];
+      view.pos = [450, 150];
       graph.add(rand);
-      graph.add(py);
       graph.add(glyphs);
       graph.add(view);
-      rand.connect(0, py, 0);
-      py.connect(0, glyphs, 0);
+      rand.connect(0, glyphs, 0);
       glyphs.connect(0, view, 0);
     }
 
