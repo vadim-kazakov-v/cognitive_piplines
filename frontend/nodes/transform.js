@@ -2,6 +2,8 @@ function SelectFieldNode() {
   this.addInput('data', 'array');
   this.addOutput('values', 'array');
   this.addProperty('field', 'Fare');
+  this.color = '#222';
+  this.bgcolor = '#444';
   this.addWidget('text', 'field', this.properties.field, v => (this.properties.field = v));
 }
 SelectFieldNode.title = 'Select Field';

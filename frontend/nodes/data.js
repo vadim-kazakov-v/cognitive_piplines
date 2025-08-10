@@ -1,6 +1,8 @@
 function TitanicNode() {
   this.addOutput('data', 'array');
   this.addProperty('limit', 5);
+  this.color = '#222';
+  this.bgcolor = '#444';
   this.addWidget('slider', 'limit', this.properties.limit, v => (this.properties.limit = v), { min: 1, max: 50, step: 1, precision: 0 });
 }
 TitanicNode.title = 'Titanic Sample';

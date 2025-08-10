@@ -2,6 +2,8 @@ function PythonNode() {
   this.addInput('data', 'array');
   this.addOutput('result', 'array');
   this.addProperty('code', 'lambda x: x');
+  this.color = '#222';
+  this.bgcolor = '#444';
   this.addWidget('text', 'code', this.properties.code, v => (this.properties.code = v), { multiline: true });
 }
 PythonNode.title = 'Python';
