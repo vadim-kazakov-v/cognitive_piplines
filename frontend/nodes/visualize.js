@@ -1572,3 +1572,157 @@ VoronoiNode.prototype.onDrawBackground = function(ctx) {
   ctx.restore();
 };
 registerNode('viz/voronoi', VoronoiNode);
+
+function PersistenceDiagramNode() {
+  this.addInput('points', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this.resizable = true;
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+}
+PersistenceDiagramNode.title = 'Persistence Diagram';
+PersistenceDiagramNode.icon = '\u26F0\uFE0F';
+PersistenceDiagramNode.prototype.onExecute = async function() {
+  const pts = this.getInputData(0);
+  if (!pts || this._pending) return;
+  let data = pts;
+  if (typeof pts[0] === 'object' && !Array.isArray(pts[0])) {
+    const keys = Object.keys(pts[0]).filter(k => typeof pts[0][k] === 'number');
+    data = pts.map(p => keys.map(k => p[k]));
+  }
+  this._pending = true;
+  try {
+    const res = await fetch('http://localhost:8000/persistence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data }),
+    });
+    this._dgms = await res.json();
+    this.setDirtyCanvas(true, true);
+    const img = captureNodeImage(this, PersistenceDiagramNode.prototype.onDrawBackground);
+    this.setOutputData(0, img);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    this._pending = false;
+  }
+};
+PersistenceDiagramNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._dgms) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const pts = this._dgms.flat();
+  const births = pts.map(p => p[0]);
+  const deaths = pts.map(p => p[1]);
+  const min = Math.min(...births, ...deaths);
+  const max = Math.max(...births, ...deaths);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  ctx.strokeStyle = '#888';
+  ctx.beginPath();
+  ctx.moveTo(0, h);
+  ctx.lineTo(w, 0);
+  ctx.stroke();
+  const colors = ['#1f77b4', '#d62728', '#2ca02c'];
+  this._dgms.forEach((dgm, dim) => {
+    ctx.fillStyle = colors[dim % colors.length];
+    dgm.forEach(p => {
+      const x = ((p[0] - min) / ((max - min) || 1)) * w;
+      const y = h - ((p[1] - min) / ((max - min) || 1)) * h;
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  });
+  ctx.restore();
+};
+registerNode('viz/persistence', PersistenceDiagramNode);
+
+function VietorisRipsNode() {
+  this.addInput('points', 'array');
+  this.addOutput('image', 'string');
+  this.addProperty('epsilon', 1.0);
+  this.size = [200, 150];
+  this.resizable = true;
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('slider', 'eps', this.properties.epsilon, v => (this.properties.epsilon = v), { min: 0.1, max: 5, step: 0.1 });
+}
+VietorisRipsNode.title = 'Vietoris-Rips';
+VietorisRipsNode.icon = '\uD83D\uDD77\uFE0F';
+VietorisRipsNode.prototype.onExecute = async function() {
+  const pts = this.getInputData(0);
+  if (!pts || this._pending) return;
+  let data = pts;
+  if (typeof pts[0] === 'object' && !Array.isArray(pts[0])) {
+    const keys = Object.keys(pts[0]).filter(k => typeof pts[0][k] === 'number');
+    data = pts.map(p => keys.map(k => p[k]));
+  }
+  this._pts = data;
+  this._pending = true;
+  try {
+    const res = await fetch('http://localhost:8000/vietoris_rips', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data, params: { epsilon: this.properties.epsilon } }),
+    });
+    this._edges = await res.json();
+    this.setDirtyCanvas(true, true);
+    const img = captureNodeImage(this, VietorisRipsNode.prototype.onDrawBackground);
+    this.setOutputData(0, img);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    this._pending = false;
+  }
+};
+VietorisRipsNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._pts) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const pts = this._pts;
+  const xs = pts.map(p => p[0]);
+  const ys = pts.map(p => p[1]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  ctx.strokeStyle = '#999';
+  (this._edges || []).forEach(e => {
+    const a = pts[e[0]];
+    const b = pts[e[1]];
+    const x1 = ((a[0] - minX) / ((maxX - minX) || 1)) * w;
+    const y1 = h - ((a[1] - minY) / ((maxY - minY) || 1)) * h;
+    const x2 = ((b[0] - minX) / ((maxX - minX) || 1)) * w;
+    const y2 = h - ((b[1] - minY) / ((maxY - minY) || 1)) * h;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  });
+  ctx.fillStyle = '#000';
+  pts.forEach(p => {
+    const x = ((p[0] - minX) / ((maxX - minX) || 1)) * w;
+    const y = h - ((p[1] - minY) / ((maxY - minY) || 1)) * h;
+    ctx.beginPath();
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+};
+registerNode('viz/vietoris_rips', VietorisRipsNode);
