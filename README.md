@@ -41,6 +41,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Select Field** – choose columns via dropdown or checkboxes
 - **To Number**, **To String**, **To Boolean**, and **Rescale** – convert values or scale numeric ranges
 - **Bar Chart**, **Scatter Plot**, and **Scatter3D** – visualize numeric data
+- **ImShow** – render 2D arrays with Matplotlib colormaps
 - **Voronoi Diagram** – display Voronoi cells for point sets with selectable X/Y columns
 - **Persistence Diagram** and **Vietoris-Rips** – topological data analysis visuals for point clouds
 - **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, and **KMeans** – run analytics algorithms on arrays of numbers
@@ -51,6 +52,16 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Log** – inspect any data in the developer console
 
 Connect nodes to create analysis pipelines; for instance, link **Titanic Sample → Select Field (Fare) → t‑SNE → Scatter Plot** to see an embedding of fare values.
+
+To visualize a matrix, drop a **Python** node with code:
+
+```python
+import numpy as np
+result = np.random.rand(20, 20).tolist()
+```
+
+Connect its output to **ImShow** and set `cmap="viridis"` with `interpolation="bilinear"` to see a smooth, viridis-colored grid.
+An example flow demonstrating this pipeline is available at `examples/imshow.json`; load it via the **Load Flow** button.
 
 ## Docker
 
