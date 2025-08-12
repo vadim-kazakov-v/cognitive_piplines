@@ -355,15 +355,11 @@
       umap.pos = [250, 150];
       const scatter = LiteGraph.createNode('viz/scatter2d');
       scatter.pos = [450, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [650, 150];
       graph.add(titanic);
       graph.add(umap);
       graph.add(scatter);
-      graph.add(view);
       titanic.connect(0, umap, 0);
       umap.connect(0, scatter, 0);
-      scatter.connect(0, view, 0);
     }
 
     function presetUmapDbscanPlot() {
@@ -375,8 +371,6 @@
       umap.pos = [450, 150];
       const scatter = LiteGraph.createNode('viz/scatter2d');
       scatter.pos = [650, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [850, 150];
       const dbscan = LiteGraph.createNode('ml/dbscan');
       dbscan.pos = [450, 350];
       const log = LiteGraph.createNode('util/log');
@@ -385,13 +379,11 @@
       graph.add(select);
       graph.add(umap);
       graph.add(scatter);
-      graph.add(view);
       graph.add(dbscan);
       graph.add(log);
       titanic.connect(0, select, 0);
       select.connect(1, umap, 0);
       umap.connect(0, scatter, 0);
-      scatter.connect(0, view, 0);
       umap.connect(0, dbscan, 0);
       dbscan.connect(0, log, 0);
     }
@@ -404,15 +396,11 @@
       select.properties.fields = ['Fare'];
       const bar = LiteGraph.createNode('viz/bar');
       bar.pos = [450, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [650, 150];
       graph.add(titanic);
       graph.add(select);
       graph.add(bar);
-      graph.add(view);
       titanic.connect(0, select, 0);
       select.connect(1, bar, 0);
-      bar.connect(0, view, 0);
     }
 
     function presetPython() {
@@ -426,17 +414,13 @@
       py.properties.code = "[{'double': v*2} for v in data]";
       const table = LiteGraph.createNode('viz/table');
       table.pos = [650, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [850, 150];
       graph.add(titanic);
       graph.add(select);
       graph.add(py);
       graph.add(table);
-      graph.add(view);
       titanic.connect(0, select, 0);
       select.connect(0, py, 0);
       py.connect(0, table, 0);
-      table.connect(0, view, 0);
     }
 
     function presetTsne() {
@@ -449,17 +433,13 @@
       tsne.pos = [450, 150];
       const scatter = LiteGraph.createNode('viz/scatter2d');
       scatter.pos = [650, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [850, 150];
       graph.add(titanic);
       graph.add(select);
       graph.add(tsne);
       graph.add(scatter);
-      graph.add(view);
       titanic.connect(0, select, 0);
       select.connect(1, tsne, 0);
       tsne.connect(0, scatter, 0);
-      scatter.connect(0, view, 0);
     }
 
     function presetUmap3D() {
@@ -473,17 +453,13 @@
       umap.properties.n_components = 3;
       const scatter = LiteGraph.createNode('viz/scatter3d');
       scatter.pos = [650, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [850, 150];
       graph.add(titanic);
       graph.add(select);
       graph.add(umap);
       graph.add(scatter);
-      graph.add(view);
       titanic.connect(0, select, 0);
       select.connect(1, umap, 0);
       umap.connect(0, scatter, 0);
-      scatter.connect(0, view, 0);
     }
 
     function presetViolin() {
@@ -494,15 +470,11 @@
       select.properties.field = 'Age';
       const violin = LiteGraph.createNode('viz/violin');
       violin.pos = [450, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [650, 150];
       graph.add(titanic);
       graph.add(select);
       graph.add(violin);
-      graph.add(view);
       titanic.connect(0, select, 0);
       select.connect(0, violin, 0);
-      violin.connect(0, view, 0);
     }
 
     function presetPieChart() {
@@ -517,17 +489,13 @@
 result = Counter(data)`;
       const pie = LiteGraph.createNode('viz/pie');
       pie.pos = [650, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [850, 150];
       graph.add(titanic);
       graph.add(select);
       graph.add(py);
       graph.add(pie);
-      graph.add(view);
       titanic.connect(0, select, 0);
       select.connect(0, py, 0);
       py.connect(0, pie, 0);
-      pie.connect(0, view, 0);
     }
 
     function presetSankey() {
@@ -561,17 +529,13 @@ result = {
 }`;
       const sankey = LiteGraph.createNode('viz/sankey');
       sankey.pos = [650, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [850, 150];
       graph.add(titanic);
       graph.add(select);
       graph.add(py);
       graph.add(sankey);
-      graph.add(view);
       titanic.connect(0, select, 0);
       select.connect(1, py, 0);
       py.connect(0, sankey, 0);
-      sankey.connect(0, view, 0);
     }
 
     function presetRandomGraph() {
@@ -579,13 +543,9 @@ result = {
       gen.pos = [50, 150];
       const viz = LiteGraph.createNode('viz/graph');
       viz.pos = [250, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [450, 150];
       graph.add(gen);
       graph.add(viz);
-      graph.add(view);
       gen.connect(0, viz, 0);
-      viz.connect(0, view, 0);
     }
 
     function presetGlyphs() {
@@ -595,13 +555,9 @@ result = {
       rand.properties.count = 9;
       const glyphs = LiteGraph.createNode('viz/glyphs');
       glyphs.pos = [250, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [450, 150];
       graph.add(rand);
       graph.add(glyphs);
-      graph.add(view);
       rand.connect(0, glyphs, 0);
-      glyphs.connect(0, view, 0);
     }
 
     function presetRandomScatter() {
@@ -616,18 +572,14 @@ result = {
       labels.pos = [250, 300];
       const scatter = LiteGraph.createNode('viz/scatter2d');
       scatter.pos = [450, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [650, 150];
       graph.add(rand);
       graph.add(toPts);
       graph.add(labels);
       graph.add(scatter);
-      graph.add(view);
       rand.connect(0, toPts, 0);
       rand.connect(0, labels, 0);
       toPts.connect(0, scatter, 0);
       labels.connect(0, scatter, 1);
-      scatter.connect(0, view, 0);
     }
 
     function presetVoronoi() {
@@ -639,16 +591,12 @@ result = {
       labels.pos = [250, 300];
       const vor = LiteGraph.createNode('viz/voronoi');
       vor.pos = [250, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [450, 150];
       graph.add(rand);
       graph.add(labels);
       graph.add(vor);
-      graph.add(view);
       rand.connect(0, vor, 0);
       rand.connect(0, labels, 0);
       labels.connect(0, vor, 1);
-      vor.connect(0, view, 0);
     }
 
     function presetTDA() {
@@ -660,19 +608,11 @@ result = {
       vr.pos = [250, 50];
       const pd = LiteGraph.createNode('viz/persistence');
       pd.pos = [250, 250];
-      const view1 = LiteGraph.createNode('viz/view');
-      view1.pos = [450, 50];
-      const view2 = LiteGraph.createNode('viz/view');
-      view2.pos = [450, 250];
       graph.add(rand);
       graph.add(vr);
       graph.add(pd);
-      graph.add(view1);
-      graph.add(view2);
       rand.connect(0, vr, 0);
       rand.connect(0, pd, 0);
-      vr.connect(0, view1, 0);
-      pd.connect(0, view2, 0);
     }
 
     const presets = [
