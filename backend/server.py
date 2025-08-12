@@ -112,7 +112,10 @@ def umap(matrix: Matrix) -> list[list[float]]:
     n_samples = data.shape[0]
 
     n_components = int(params.pop("n_components", 2))
-    n_components = min(max(n_components, 2), 3)
+    n_components = min(max(n_components, 1), 50)
+
+    if "min_dist" in params:
+        params["min_dist"] = max(0.0, min(1.0, float(params["min_dist"])))
 
     if n_samples < 3:
         return [[0.0] * n_components for _ in range(n_samples)]
