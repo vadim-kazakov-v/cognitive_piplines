@@ -282,6 +282,64 @@ def pca(matrix: Matrix) -> list[list[float]]:
     return embedding.tolist()
 
 
+@app.post("/persistence")
+def persistence_diagram(matrix: Matrix) -> list[list[list[float | None]]]:
+    """Compute a persistence diagram for a point cloud."""
+
+    from ripser import ripser
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if data.size == 0:
+        return []
+
+    maxdim = int(params.get("maxdim", 1))
+    result = ripser(data, maxdim=maxdim)
+    dgms = result.get("dgms", [])
+    cleaned: list[list[list[float | None]]] = []
+    for dgm in dgms:
+        cleaned.append(
+            [
+                [float(b), None if np.isinf(d) else float(d)]
+                for b, d in dgm
+            ]
+        )
+    return cleaned
+
+
+@app.post("/vietoris_rips")
+def vietoris_rips(matrix: Matrix) -> list[list[int]]:
+    """Return edges of the Vietoris–Rips complex for epsilon."""
+
+    from sklearn.metrics import pairwise_distances
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if data.ndim != 2:
+        raise HTTPException(status_code=400, detail="Input must be a 2D array")
+
+    n_samples = data.shape[0]
+    if n_samples == 0:
+        return []
+
+    epsilon = float(params.get("epsilon", 1.0))
+    dists = pairwise_distances(data)
+    edges: list[list[int]] = []
+    for i in range(n_samples):
+        for j in range(i + 1, n_samples):
+            if dists[i, j] <= epsilon:
+                edges.append([i, j])
+    return edges
+
+
 @app.post("/python")
 def run_python(req: CodeRequest) -> Any:
     """Execute arbitrary Python code with optional data."""
