@@ -12,17 +12,25 @@ function ApiNode(endpoint, title, params, outputs) {
   if (params) {
     for (const key in params) {
       const opt = params[key];
-      // ensure integer-only params are displayed and stored as integers
-      if ((opt.step === undefined || opt.step === 1 || opt.step === 1.0) && opt.precision === undefined) {
+      const type = opt.type || 'slider';
+      // ensure integer-only slider params are displayed and stored as integers
+      if (
+        type === 'slider' &&
+        (opt.step === undefined || opt.step === 1 || opt.step === 1.0) &&
+        opt.precision === undefined
+      ) {
         opt.precision = 0;
       }
       this.properties[key] = opt.value;
       this.addWidget(
-        'slider',
+        type,
         key,
         opt.value,
         v => {
-          if (opt.step === undefined || opt.step === 1 || opt.step === 1.0) {
+          if (
+            type === 'slider' &&
+            (opt.step === undefined || opt.step === 1 || opt.step === 1.0)
+          ) {
             v = Math.round(v);
           }
           this.properties[key] = v;
@@ -56,7 +64,11 @@ ApiNode.prototype.onExecute = async function() {
     for (const k in this.properties) {
       let val = this.properties[k];
       const opt = this._paramOpts[k];
-      if (!opt || opt.step === undefined || opt.step === 1 || opt.step === 1.0) {
+      const type = (opt && opt.type) || 'slider';
+      if (
+        type === 'slider' &&
+        (!opt || opt.step === undefined || opt.step === 1 || opt.step === 1.0)
+      ) {
         val = Math.round(val);
       }
       payload.params[k] = val;
@@ -93,7 +105,9 @@ registerNode('ml/tsne', TsneNode);
 function UmapNode() {
   ApiNode.call(this, 'umap', 'UMAP', {
     n_neighbors: { value: 15, min: 2, max: 50, step: 1 },
-    n_components: { value: 2, min: 2, max: 3, step: 1 },
+    n_components: { value: 2, min: 1, max: 50, step: 1 },
+    min_dist: { value: 0.1, min: 0, max: 1, step: 0.01 },
+    metric: { value: 'euclidean', type: 'text' },
   });
 }
 UmapNode.title = 'UMAP';
