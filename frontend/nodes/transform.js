@@ -125,6 +125,7 @@ registerNode('transform/onehot', OneHotNode);
 function LabelEncodeNode() {
   this.addInput('data', 'array');
   this.addOutput('data', 'array');
+  this.addOutput('values', 'array');
   this.addProperty('field', 'Sex');
   this.color = '#222';
   this.bgcolor = '#444';
@@ -160,8 +161,10 @@ LabelEncodeNode.prototype.onExecute = function() {
   const categories = Array.from(new Set(data.map(r => r[field])));
   const mapping = {};
   categories.forEach((cat, i) => (mapping[cat] = i));
-  const result = data.map(row => ({ [field]: mapping[row[field]] }));
+  const values = data.map(row => mapping[row[field]]);
+  const result = values.map(v => ({ [field]: v }));
   this.setOutputData(0, result);
+  this.setOutputData(1, values);
 };
 registerNode('transform/labelencode', LabelEncodeNode);
 
