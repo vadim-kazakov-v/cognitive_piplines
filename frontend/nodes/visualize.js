@@ -1473,6 +1473,8 @@ function VoronoiNode() {
   this.addInput('points', 'array');
   this.addInput('color', 'array');
   this.addOutput('image', 'string');
+  this.addProperty('x', 'col1');
+  this.addProperty('y', 'col2');
   this.size = [200, 150];
   this.resizable = true;
   this._zoom = 1;
@@ -1480,6 +1482,8 @@ function VoronoiNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
+  this.addWidget('text', 'x', this.properties.x, v => (this.properties.x = v));
+  this.addWidget('text', 'y', this.properties.y, v => (this.properties.y = v));
   this.addWidget('button', '\uD83D\uDCBE', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
@@ -1495,8 +1499,17 @@ function VoronoiNode() {
 VoronoiNode.title = 'Voronoi';
 VoronoiNode.icon = '\uD83D\uDCCD';
 VoronoiNode.prototype.onExecute = function() {
-  const pts = this.getInputData(0);
+  let pts = this.getInputData(0);
   if (!pts) return;
+  const xKey = this.properties.x;
+  const yKey = this.properties.y;
+  if (Array.isArray(pts)) {
+    pts = pts.map(p =>
+      Array.isArray(p)
+        ? p
+        : [p[xKey] ?? p.x, p[yKey] ?? p.y]
+    );
+  }
   this._pts = pts;
   this._colors = this.getInputData(1);
   this.setDirtyCanvas(true, true);
@@ -1508,7 +1521,7 @@ VoronoiNode.prototype.onDrawBackground = function(ctx) {
   const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
-  const pts = this._pts.map(p => Array.isArray(p) ? p : [p.x, p.y]);
+  const pts = this._pts;
   const xs = pts.map(p => p[0]);
   const ys = pts.map(p => p[1]);
   const minX = Math.min(...xs);
@@ -1518,7 +1531,11 @@ VoronoiNode.prototype.onDrawBackground = function(ctx) {
   ctx.save();
   ctx.translate(this._offset[0], this._offset[1] + top);
   ctx.scale(this._zoom, this._zoom);
-  const img = ctx.createImageData(w, h);
+  const off = document.createElement('canvas');
+  off.width = w;
+  off.height = h;
+  const octx = off.getContext('2d');
+  const img = octx.createImageData(w, h);
   const data = img.data;
   for (let y = 0; y < h; y++) {
     const py = minY + ((h - y) / h) * ((maxY - minY) || 1);
@@ -1540,7 +1557,8 @@ VoronoiNode.prototype.onDrawBackground = function(ctx) {
       data[idx + 3] = 255;
     }
   }
-  ctx.putImageData(img, 0, 0);
+  octx.putImageData(img, 0, 0);
+  ctx.drawImage(off, 0, 0);
   ctx.strokeStyle = '#666';
   ctx.strokeRect(0, 0, w, h);
   ctx.fillStyle = '#000';
