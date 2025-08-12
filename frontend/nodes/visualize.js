@@ -1469,3 +1469,88 @@ GlyphsNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/glyphs', GlyphsNode);
 
+function VoronoiNode() {
+  this.addInput('points', 'array');
+  this.addInput('color', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this.resizable = true;
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.addWidget('button', '\uD83D\uDCBE', null, () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = this.size[0];
+    canvas.height = this.size[1];
+    const ctx = canvas.getContext('2d');
+    VoronoiNode.prototype.onDrawBackground.call(this, ctx);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL();
+    a.download = 'voronoi.png';
+    a.click();
+  }, { width: 30 });
+}
+VoronoiNode.title = 'Voronoi';
+VoronoiNode.icon = '\uD83D\uDCCD';
+VoronoiNode.prototype.onExecute = function() {
+  const pts = this.getInputData(0);
+  if (!pts) return;
+  this._pts = pts;
+  this._colors = this.getInputData(1);
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, VoronoiNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+VoronoiNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._pts) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const pts = this._pts.map(p => Array.isArray(p) ? p : [p.x, p.y]);
+  const xs = pts.map(p => p[0]);
+  const ys = pts.map(p => p[1]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  const img = ctx.createImageData(w, h);
+  const data = img.data;
+  for (let y = 0; y < h; y++) {
+    const py = minY + ((h - y) / h) * ((maxY - minY) || 1);
+    for (let x = 0; x < w; x++) {
+      const px = minX + (x / w) * ((maxX - minX) || 1);
+      let best = 0;
+      let bestDist = Infinity;
+      for (let i = 0; i < pts.length; i++) {
+        const dx = px - pts[i][0];
+        const dy = py - pts[i][1];
+        const d = dx * dx + dy * dy;
+        if (d < bestDist) { bestDist = d; best = i; }
+      }
+      const rgb = hexToRgb(labelColor(this._colors && this._colors[best]));
+      const idx = (y * w + x) * 4;
+      data[idx] = rgb[0];
+      data[idx + 1] = rgb[1];
+      data[idx + 2] = rgb[2];
+      data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  ctx.strokeStyle = '#666';
+  ctx.strokeRect(0, 0, w, h);
+  ctx.fillStyle = '#000';
+  for (let i = 0; i < pts.length; i++) {
+    const x = ((pts[i][0] - minX) / ((maxX - minX) || 1)) * w;
+    const y = h - ((pts[i][1] - minY) / ((maxY - minY) || 1)) * h;
+    ctx.beginPath();
+    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+};
+registerNode('viz/voronoi', VoronoiNode);
