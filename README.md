@@ -43,7 +43,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Bar Chart**, **Scatter Plot**, and **Scatter3D** – visualize numeric data
 - **ImShow** – render 2D arrays with Matplotlib colormaps
 - **Voronoi Diagram** – display Voronoi cells for point sets with selectable X/Y columns
-- **Persistence Diagram** and **Vietoris-Rips** – topological data analysis visuals for point clouds
+- **Persistence Diagram**, **Persistence Barcode**, and **Vietoris-Rips** – topological data analysis visuals for point clouds
 - **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, and **KMeans** – run analytics algorithms on arrays of numbers
 - **Spectral**, **GMM** – additional clustering tools
 - **Isolation Forest**, **Local Outlier Factor** – anomaly detection

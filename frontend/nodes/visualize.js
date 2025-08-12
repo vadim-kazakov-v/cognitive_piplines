@@ -1666,6 +1666,7 @@ registerNode('viz/voronoi', VoronoiNode);
 
 function PersistenceDiagramNode() {
   this.addInput('points', 'array');
+  this.addInput('eps', 'number');
   this.addOutput('image', 'string');
   this.size = [200, 150];
   this.resizable = true;
@@ -1680,6 +1681,7 @@ PersistenceDiagramNode.icon = '\u26F0\uFE0F';
 PersistenceDiagramNode.prototype.onExecute = async function() {
   const pts = this.getInputData(0);
   if (!pts || this._pending) return;
+  this._eps = this.getInputData(1);
   let data = pts;
   if (typeof pts[0] === 'object' && !Array.isArray(pts[0])) {
     const keys = Object.keys(pts[0]).filter(k => typeof pts[0][k] === 'number');
@@ -1737,18 +1739,135 @@ PersistenceDiagramNode.prototype.onDrawBackground = function(ctx) {
   ctx.stroke();
   const colors = ['#1f77b4', '#d62728', '#2ca02c'];
   this._dgms.forEach((dgm, dim) => {
-    ctx.fillStyle = colors[dim % colors.length];
     dgm.forEach(p => {
       const x = ((p[0] - min) / ((max - min) || 1)) * w;
       const y = h - ((p[1] - min) / ((max - min) || 1)) * h;
+      const alive =
+        typeof this._eps === 'number' &&
+        p[0] <= this._eps &&
+        (p[1] == null || this._eps <= p[1]);
+      ctx.fillStyle = alive ? '#ff7f0e' : colors[dim % colors.length];
       ctx.beginPath();
       ctx.arc(x, y, 3, 0, Math.PI * 2);
       ctx.fill();
     });
   });
+  if (typeof this._eps === 'number') {
+    const v = this._eps;
+    const x = ((v - min) / ((max - min) || 1)) * w;
+    const y = h - ((v - min) / ((max - min) || 1)) * h;
+    ctx.strokeStyle = '#ff7f0e';
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
   ctx.restore();
 };
 registerNode('viz/persistence', PersistenceDiagramNode);
+
+function PersistenceBarcodeNode() {
+  this.addInput('points', 'array');
+  this.addInput('eps', 'number');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this.resizable = true;
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+}
+PersistenceBarcodeNode.title = 'Persistence Barcode';
+PersistenceBarcodeNode.icon = '\uD83D\uDCCB';
+PersistenceBarcodeNode.prototype.onExecute = async function() {
+  const pts = this.getInputData(0);
+  if (!pts || this._pending) return;
+  this._eps = this.getInputData(1);
+  let data = pts;
+  if (typeof pts[0] === 'object' && !Array.isArray(pts[0])) {
+    const keys = Object.keys(pts[0]).filter(k => typeof pts[0][k] === 'number');
+    data = pts.map(p => keys.map(k => p[k]));
+  }
+  this._pending = true;
+  try {
+    const res = await fetch('http://localhost:8000/persistence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data }),
+    });
+    if (!res.ok) {
+      let msg;
+      try {
+        const err = await res.json();
+        msg = err && err.detail ? err.detail : JSON.stringify(err);
+      } catch (e) {
+        msg = res.statusText;
+      }
+      throw new Error(`persistence request failed: ${msg}`);
+    }
+    const dgms = await res.json();
+    this._dgms = Array.isArray(dgms) ? dgms : null;
+    if (this._dgms) {
+      this.setDirtyCanvas(true, true);
+      const img = captureNodeImage(this, PersistenceBarcodeNode.prototype.onDrawBackground);
+      this.setOutputData(0, img);
+    }
+  } catch (err) {
+    console.error(err);
+    this._dgms = null;
+  } finally {
+    this._pending = false;
+  }
+};
+PersistenceBarcodeNode.prototype.onDrawBackground = function(ctx) {
+  if (!Array.isArray(this._dgms)) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  const pts = this._dgms.flat ? this._dgms.flat() : [].concat(...this._dgms);
+  const births = pts.map(p => p[0]);
+  const deaths = pts.map(p => (p[1] == null ? p[0] : p[1]));
+  const min = Math.min(...births, ...deaths);
+  const max = Math.max(...births, ...deaths);
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  drawPlotArea(ctx, w, h);
+  const colors = ['#1f77b4', '#d62728', '#2ca02c'];
+  const nDims = this._dgms.length || 1;
+  const dimHeight = h / nDims;
+  this._dgms.forEach((dgm, dim) => {
+    const barHeight = dimHeight / ((dgm.length || 1) + 1);
+    dgm.forEach((p, i) => {
+      const x1 = ((p[0] - min) / ((max - min) || 1)) * w;
+      const x2 = (( (p[1] == null ? max : p[1]) - min) / ((max - min) || 1)) * w;
+      const y = dim * dimHeight + (i + 1) * barHeight;
+      const alive =
+        typeof this._eps === 'number' &&
+        p[0] <= this._eps &&
+        (p[1] == null || this._eps <= p[1]);
+      ctx.strokeStyle = alive ? '#ff7f0e' : colors[dim % colors.length];
+      ctx.beginPath();
+      ctx.moveTo(x1, h - y);
+      ctx.lineTo(x2, h - y);
+      ctx.stroke();
+    });
+  });
+  if (typeof this._eps === 'number') {
+    const v = this._eps;
+    const x = ((v - min) / ((max - min) || 1)) * w;
+    ctx.strokeStyle = '#ff7f0e';
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  ctx.restore();
+};
+registerNode('viz/barcode', PersistenceBarcodeNode);
 
 function computeVietorisEdges(pts, eps) {
   const edges = [];
@@ -1773,6 +1892,7 @@ function VietorisRipsNode() {
   this.addInput('color', 'array');
   this.addInput('size', 'array');
   this.addOutput('image', 'string');
+  this.addOutput('eps', 'number');
   this.addProperty('epsilon', 1.0);
   this.size = [200, 150];
   this.resizable = true;
@@ -1800,6 +1920,7 @@ VietorisRipsNode.prototype._updateEdges = function() {
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, VietorisRipsNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
+  this.setOutputData(1, this.properties.epsilon);
 };
 VietorisRipsNode.prototype.onExecute = function() {
   const pts = this.getInputData(0);
