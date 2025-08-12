@@ -10,13 +10,15 @@ function captureNodeImage(node, drawFunc) {
   canvas.width = node.size[0];
   canvas.height = node.size[1];
   const ctx = canvas.getContext('2d');
-  const oldZoom = node._zoom;
-  const oldOffset = node._offset.slice();
+  const hadZoom = typeof node._zoom === 'number';
+  const hadOffset = Array.isArray(node._offset);
+  const oldZoom = hadZoom ? node._zoom : 1;
+  const oldOffset = hadOffset ? node._offset.slice() : [0, 0];
   node._zoom = 1;
   node._offset = [0, 0];
   drawFunc.call(node, ctx);
-  node._zoom = oldZoom;
-  node._offset = oldOffset;
+  if (hadZoom) node._zoom = oldZoom; else delete node._zoom;
+  if (hadOffset) node._offset = oldOffset; else delete node._offset;
   return canvas.toDataURL();
 }
 
@@ -1690,12 +1692,24 @@ VietorisRipsNode.prototype.onExecute = async function() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data, params: { epsilon: this.properties.epsilon } }),
     });
-    this._edges = await res.json();
+    if (!res.ok) {
+      let msg;
+      try {
+        const err = await res.json();
+        msg = err && err.detail ? err.detail : JSON.stringify(err);
+      } catch (e) {
+        msg = res.statusText;
+      }
+      throw new Error(`vietoris_rips request failed: ${msg}`);
+    }
+    const edges = await res.json();
+    this._edges = Array.isArray(edges) ? edges : [];
     this.setDirtyCanvas(true, true);
     const img = captureNodeImage(this, VietorisRipsNode.prototype.onDrawBackground);
     this.setOutputData(0, img);
   } catch (err) {
     console.error(err);
+    this._edges = [];
   } finally {
     this._pending = false;
   }
@@ -1717,7 +1731,7 @@ VietorisRipsNode.prototype.onDrawBackground = function(ctx) {
   ctx.scale(this._zoom, this._zoom);
   drawPlotArea(ctx, w, h);
   ctx.strokeStyle = '#999';
-  (this._edges || []).forEach(e => {
+  (Array.isArray(this._edges) ? this._edges : []).forEach(e => {
     const a = pts[e[0]];
     const b = pts[e[1]];
     const x1 = ((a[0] - minX) / ((maxX - minX) || 1)) * w;
