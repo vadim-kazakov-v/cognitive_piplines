@@ -582,6 +582,23 @@ result = {
       labels.connect(0, scatter, 1);
     }
 
+    function presetImShow() {
+      const py = LiteGraph.createNode('util/python');
+      py.pos = [50, 150];
+      py.properties.code = "import numpy as np\nresult = np.random.rand(20,20).tolist()";
+      const im = LiteGraph.createNode('viz/imshow');
+      im.pos = [250, 150];
+      im.properties.cmap = 'viridis';
+      im.properties.interpolation = 'bilinear';
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [450, 150];
+      graph.add(py);
+      graph.add(im);
+      graph.add(view);
+      py.connect(0, im, 0);
+      im.connect(0, view, 0);
+    }
+
     function presetVoronoi() {
       const rand = LiteGraph.createNode('data/random');
       rand.pos = [50, 150];
@@ -628,6 +645,7 @@ result = {
       { name: 'Random Graph', fn: presetRandomGraph },
       { name: 'Glyphs', fn: presetGlyphs },
       { name: 'Random Scatter', fn: presetRandomScatter },
+      { name: 'ImShow Demo', fn: presetImShow },
       { name: 'Voronoi', fn: presetVoronoi },
       { name: 'TDA Demo', fn: presetTDA }
     ];

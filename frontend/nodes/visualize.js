@@ -606,6 +606,95 @@ HeatmapNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/heatmap', HeatmapNode);
 
+function ImshowNode() {
+  this.addInput('matrix', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+  this.properties = {
+    cmap: 'viridis',
+    interpolation: 'nearest',
+    vmin: 'auto',
+    vmax: 'auto',
+  };
+  this.addWidget('combo', 'cmap', this.properties.cmap, v => (this.properties.cmap = v), {
+    values: ['viridis', 'plasma', 'magma', 'inferno', 'gray'],
+    property: 'cmap',
+  });
+  this.addWidget(
+    'combo',
+    'interp',
+    this.properties.interpolation,
+    v => (this.properties.interpolation = v),
+    { values: ['nearest', 'bilinear', 'bicubic'], property: 'interpolation' }
+  );
+  this.addWidget('text', 'vmin', this.properties.vmin, v => (this.properties.vmin = v), {
+    property: 'vmin',
+  });
+  this.addWidget('text', 'vmax', this.properties.vmax, v => (this.properties.vmax = v), {
+    property: 'vmax',
+  });
+}
+ImshowNode.title = 'ImShow';
+ImshowNode.icon = '🖼️';
+ImshowNode.prototype.onExecute = async function() {
+  const matrix = this.getInputData(0);
+  if (!matrix) return;
+  if (this._pending) return;
+  this._pending = true;
+  const { cmap, interpolation, vmin, vmax } = this.properties;
+  const vminArg = vmin === 'auto' || vmin === '' ? 'None' : Number(vmin);
+  const vmaxArg = vmax === 'auto' || vmax === '' ? 'None' : Number(vmax);
+  const code = `
+import io, base64, numpy as np, matplotlib.pyplot as plt
+data = np.array(data)
+fig, ax = plt.subplots()
+ax.imshow(data, cmap='${cmap}', interpolation='${interpolation}', vmin=${vminArg}, vmax=${vmaxArg})
+ax.axis('off')
+buf = io.BytesIO()
+plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
+plt.close(fig)
+result = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
+`;
+  try {
+    const res = await fetch('http://localhost:8000/python', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, data: matrix }),
+    });
+    const img = await res.json();
+    this.setOutputData(0, img);
+    if (img !== this._current) {
+      this._current = img;
+      this._img = new Image();
+      this._img.onload = () => this.setDirtyCanvas(true, true);
+      this._img.src = img;
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    this._pending = false;
+  }
+};
+ImshowNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._img) return;
+  const top =
+    LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  ctx.drawImage(this._img, 0, 0, w, h);
+  ctx.restore();
+};
+registerNode('viz/imshow', ImshowNode);
+
 function CorrelationMapNode() {
   this.addInput('data', 'array');
   this.addOutput('image', 'string');
