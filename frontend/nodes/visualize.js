@@ -1661,8 +1661,28 @@ PersistenceDiagramNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/persistence', PersistenceDiagramNode);
 
+function computeVietorisEdges(pts, eps) {
+  const edges = [];
+  const eps2 = eps * eps;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    for (let j = i + 1; j < pts.length; j++) {
+      const b = pts[j];
+      let d2 = 0;
+      for (let k = 0; k < a.length && k < b.length; k++) {
+        const diff = a[k] - b[k];
+        d2 += diff * diff;
+      }
+      if (d2 <= eps2) edges.push([i, j]);
+    }
+  }
+  return edges;
+}
+
 function VietorisRipsNode() {
   this.addInput('points', 'array');
+  this.addInput('color', 'array');
+  this.addInput('size', 'array');
   this.addOutput('image', 'string');
   this.addProperty('epsilon', 1.0);
   this.size = [200, 150];
@@ -1672,47 +1692,38 @@ function VietorisRipsNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('slider', 'eps', this.properties.epsilon, v => (this.properties.epsilon = v), { min: 0.1, max: 5, step: 0.1 });
+  this.addWidget(
+    'slider',
+    'eps',
+    this.properties.epsilon,
+    v => {
+      this.properties.epsilon = v;
+      this._updateEdges();
+    },
+    { min: 0.1, max: 5, step: 0.1 }
+  );
 }
 VietorisRipsNode.title = 'Vietoris-Rips';
 VietorisRipsNode.icon = '\uD83D\uDD77\uFE0F';
-VietorisRipsNode.prototype.onExecute = async function() {
+VietorisRipsNode.prototype._updateEdges = function() {
+  if (!this._pts) return;
+  this._edges = computeVietorisEdges(this._pts, this.properties.epsilon);
+  this.setDirtyCanvas(true, true);
+  const img = captureNodeImage(this, VietorisRipsNode.prototype.onDrawBackground);
+  this.setOutputData(0, img);
+};
+VietorisRipsNode.prototype.onExecute = function() {
   const pts = this.getInputData(0);
-  if (!pts || this._pending) return;
+  if (!pts) return;
   let data = pts;
   if (typeof pts[0] === 'object' && !Array.isArray(pts[0])) {
     const keys = Object.keys(pts[0]).filter(k => typeof pts[0][k] === 'number');
     data = pts.map(p => keys.map(k => p[k]));
   }
   this._pts = data;
-  this._pending = true;
-  try {
-    const res = await fetch('http://localhost:8000/vietoris_rips', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data, params: { epsilon: this.properties.epsilon } }),
-    });
-    if (!res.ok) {
-      let msg;
-      try {
-        const err = await res.json();
-        msg = err && err.detail ? err.detail : JSON.stringify(err);
-      } catch (e) {
-        msg = res.statusText;
-      }
-      throw new Error(`vietoris_rips request failed: ${msg}`);
-    }
-    const edges = await res.json();
-    this._edges = Array.isArray(edges) ? edges : [];
-    this.setDirtyCanvas(true, true);
-    const img = captureNodeImage(this, VietorisRipsNode.prototype.onDrawBackground);
-    this.setOutputData(0, img);
-  } catch (err) {
-    console.error(err);
-    this._edges = [];
-  } finally {
-    this._pending = false;
-  }
+  this._colors = this.getInputData(1);
+  this._sizes = this.getInputData(2);
+  this._updateEdges();
 };
 VietorisRipsNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
@@ -1743,14 +1754,16 @@ VietorisRipsNode.prototype.onDrawBackground = function(ctx) {
     ctx.lineTo(x2, y2);
     ctx.stroke();
   });
-  ctx.fillStyle = '#000';
-  pts.forEach(p => {
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
     const x = ((p[0] - minX) / ((maxX - minX) || 1)) * w;
     const y = h - ((p[1] - minY) / ((maxY - minY) || 1)) * h;
+    ctx.fillStyle = labelColor(this._colors && this._colors[i]);
     ctx.beginPath();
-    ctx.arc(x, y, 2, 0, Math.PI * 2);
+    const r = this._sizes && this._sizes[i] ? Math.max(1, Number(this._sizes[i])) : 2;
+    ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
-  });
+  }
   ctx.restore();
 };
 registerNode('viz/vietoris_rips', VietorisRipsNode);
