@@ -630,6 +630,32 @@ result = {
       scatter.connect(0, view, 0);
     }
 
+    function presetVoronoi() {
+      const rand = LiteGraph.createNode('data/random');
+      rand.pos = [50, 150];
+      rand.properties.columns = 2;
+      rand.properties.count = 30;
+      const toPts = LiteGraph.createNode('util/python');
+      toPts.pos = [250, 150];
+      toPts.properties.code = `[ [r.col1, r.col2] for r in data ]`;
+      const labels = LiteGraph.createNode('data/random_labels');
+      labels.pos = [250, 300];
+      const vor = LiteGraph.createNode('viz/voronoi');
+      vor.pos = [450, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [650, 150];
+      graph.add(rand);
+      graph.add(toPts);
+      graph.add(labels);
+      graph.add(vor);
+      graph.add(view);
+      rand.connect(0, toPts, 0);
+      rand.connect(0, labels, 0);
+      toPts.connect(0, vor, 0);
+      labels.connect(0, vor, 1);
+      vor.connect(0, view, 0);
+    }
+
     const presets = [
       { name: 'Simple UMAP', fn: presetSimpleUMAP },
       { name: 'UMAP + DBSCAN', fn: presetUmapDbscanPlot },
@@ -642,7 +668,8 @@ result = {
       { name: 'Sankey', fn: presetSankey },
       { name: 'Random Graph', fn: presetRandomGraph },
       { name: 'Glyphs', fn: presetGlyphs },
-      { name: 'Random Scatter', fn: presetRandomScatter }
+      { name: 'Random Scatter', fn: presetRandomScatter },
+      { name: 'Voronoi', fn: presetVoronoi }
     ];
 
     const presetList = document.getElementById('preset-list');
