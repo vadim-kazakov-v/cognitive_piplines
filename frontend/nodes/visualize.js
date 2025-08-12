@@ -1601,22 +1601,36 @@ PersistenceDiagramNode.prototype.onExecute = async function() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data }),
     });
-    this._dgms = await res.json();
-    this.setDirtyCanvas(true, true);
-    const img = captureNodeImage(this, PersistenceDiagramNode.prototype.onDrawBackground);
-    this.setOutputData(0, img);
+    if (!res.ok) {
+      let msg;
+      try {
+        const err = await res.json();
+        msg = err && err.detail ? err.detail : JSON.stringify(err);
+      } catch (e) {
+        msg = res.statusText;
+      }
+      throw new Error(`persistence request failed: ${msg}`);
+    }
+    const dgms = await res.json();
+    this._dgms = Array.isArray(dgms) ? dgms : null;
+    if (this._dgms) {
+      this.setDirtyCanvas(true, true);
+      const img = captureNodeImage(this, PersistenceDiagramNode.prototype.onDrawBackground);
+      this.setOutputData(0, img);
+    }
   } catch (err) {
     console.error(err);
+    this._dgms = null;
   } finally {
     this._pending = false;
   }
 };
 PersistenceDiagramNode.prototype.onDrawBackground = function(ctx) {
-  if (!this._dgms) return;
+  if (!Array.isArray(this._dgms)) return;
   const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
-  const pts = this._dgms.flat();
+  const pts = this._dgms.flat ? this._dgms.flat() : [].concat(...this._dgms);
   const births = pts.map(p => p[0]);
   const deaths = pts.map(p => p[1]);
   const min = Math.min(...births, ...deaths);
