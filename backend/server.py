@@ -207,7 +207,8 @@ def get_feedback() -> list[dict]:
 @app.post("/feedback")
 def save_feedback(feedback: str = Body(..., media_type="text/plain")) -> dict:
     """Store a feedback message sent as plain text."""
-    entry = {"message": feedback}
+    # initialize feedback entry with like / dislike counters
+    entry = {"message": feedback, "likes": 0, "dislikes": 0}
     with conn.cursor() as cur:
         cur.execute("INSERT INTO feedback (data) VALUES (%s)", [Json(entry)])
         conn.commit()
@@ -220,14 +221,26 @@ class Reaction(BaseModel):
 
 @app.post("/feedback/{fb_id}/reaction")
 def set_feedback_reaction(fb_id: int, react: Reaction) -> dict:
-    """Store a like or dislike reaction for a feedback entry."""
+    """Increment like or dislike counters for a feedback entry."""
+    reaction = react.reaction
+    if reaction not in {"like", "dislike"}:
+        raise HTTPException(status_code=400, detail="Invalid reaction")
     with conn.cursor() as cur:
-        cur.execute(
-            "UPDATE feedback SET data = jsonb_set(data, '{reaction}', %s, true) WHERE id = %s",
-            [Json(react.reaction), fb_id],
-        )
+        cur.execute("SELECT data FROM feedback WHERE id = %s", [fb_id])
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Feedback not found")
+        data = row[0]
+        likes = int(data.get("likes", 0))
+        dislikes = int(data.get("dislikes", 0))
+        if reaction == "like":
+            likes += 1
+        else:
+            dislikes += 1
+        data.update({"likes": likes, "dislikes": dislikes})
+        cur.execute("UPDATE feedback SET data = %s WHERE id = %s", [Json(data), fb_id])
         conn.commit()
-    return {"status": "ok"}
+    return {"status": "ok", "likes": likes, "dislikes": dislikes}
 
 
 @app.post("/rf_train")
