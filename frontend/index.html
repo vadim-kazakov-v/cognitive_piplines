@@ -630,6 +630,20 @@ result = {
       rand.connect(0, pd, 0);
     }
 
+    function presetUncertainty() {
+      const rand = LiteGraph.createNode('data/random_series');
+      rand.pos = [50, 150];
+      const unc = LiteGraph.createNode('viz/uncertainty');
+      unc.pos = [260, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [470, 150];
+      graph.add(rand);
+      graph.add(unc);
+      graph.add(view);
+      rand.connect(0, unc, 0);
+      unc.connect(0, view, 0);
+    }
+
     const presets = [
       { name: 'Simple UMAP', fn: presetSimpleUMAP },
       { name: 'UMAP + DBSCAN', fn: presetUmapDbscanPlot },
@@ -645,7 +659,8 @@ result = {
       { name: 'Random Scatter', fn: presetRandomScatter },
       { name: 'ImShow Demo', fn: presetImShow },
       { name: 'Voronoi', fn: presetVoronoi },
-      { name: 'TDA Demo', fn: presetTDA }
+      { name: 'TDA Demo', fn: presetTDA },
+      { name: 'Uncertainty Demo', fn: presetUncertainty }
     ];
 
     const presetList = document.getElementById('preset-list');
