@@ -42,7 +42,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **To Number**, **To String**, **To Boolean**, and **Rescale** – convert values or scale numeric ranges
 - **Bar Chart**, **Scatter Plot**, and **Scatter3D** – visualize numeric data
 - **ImShow** – render 2D arrays with Matplotlib colormaps
-- **Voronoi Diagram** – display Voronoi cells for point sets with selectable X/Y columns
+- **Voronoi Diagram** – display Voronoi cells for point sets with selectable X/Y columns and optional color interpolation
 - **Contrast Focus** – dim unselected areas of an image while keeping a chosen rectangle fully visible; opacity is adjustable
 - **Persistence Diagram**, **Persistence Barcode**, and **Vietoris-Rips** – topological data analysis visuals for point clouds
 - **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, and **KMeans** – run analytics algorithms on arrays of numbers
