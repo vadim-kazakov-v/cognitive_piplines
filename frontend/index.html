@@ -622,6 +622,20 @@ result = {
         });
     }
 
+    function presetPaletteDemo() {
+      const palette = LiteGraph.createNode('perceptual/palette');
+      palette.pos = [50, 150];
+      const orig = LiteGraph.createNode('util/log');
+      orig.pos = [250, 100];
+      const sim = LiteGraph.createNode('util/log');
+      sim.pos = [250, 200];
+      graph.add(palette);
+      graph.add(orig);
+      graph.add(sim);
+      palette.connect(0, orig, 0);
+      palette.connect(1, sim, 0);
+    }
+
     const presets = [
       { name: 'Simple UMAP', fn: presetSimpleUMAP },
       { name: 'UMAP + DBSCAN', fn: presetUmapDbscanPlot },
@@ -637,7 +651,8 @@ result = {
       { name: 'Random Scatter', fn: presetRandomScatter },
       { name: 'ImShow Demo', fn: presetImShow },
       { name: 'Voronoi', fn: presetVoronoi },
-      { name: 'TDA Demo', fn: presetTDA }
+      { name: 'TDA Demo', fn: presetTDA },
+      { name: 'Palette Demo', fn: presetPaletteDemo }
     ];
 
     const presetList = document.getElementById('preset-list');
@@ -660,6 +675,7 @@ result = {
   <script src="nodes/transform.js"></script>
   <script src="nodes/visualize.js"></script>
   <script src="nodes/visualizer.js"></script>
+  <script src="nodes/perceptual.js"></script>
   <script src="nodes/util.js"></script>
   <script src="nodes/ml.js"></script>
   <script src="nodes/python.js"></script>
