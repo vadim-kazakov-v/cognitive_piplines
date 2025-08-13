@@ -1,3 +1,12 @@
+async function fetchExplanation(model, data) {
+  const res = await fetch('http://localhost:8000/explain', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model, data }),
+  });
+  return res.json();
+}
+
 function ApiNode(endpoint, title, params, outputs) {
   this.endpoint = endpoint;
   this.addInput('data', 'array');
@@ -213,4 +222,97 @@ LofNode.title = 'Local Outlier Factor';
 LofNode.icon = '🚨';
 LofNode.prototype = Object.create(ApiNode.prototype);
 registerNode('ml/lof', LofNode);
+
+function RandomForestNode() {
+  this.addInput('data', 'array');
+  this.addInput('target', 'array');
+  this.addOutput('prediction', 'array');
+  this.addOutput('model', 'string');
+  this.title = 'Random Forest';
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('button', 'train', null, () => this.train());
+}
+RandomForestNode.title = 'Random Forest';
+RandomForestNode.icon = '🌳';
+RandomForestNode.prototype.train = async function() {
+  const data = this.getInputData(0);
+  const target = this.getInputData(1);
+  if (!data || !target || this._pending) return;
+  this._pending = true;
+  try {
+    const res = await fetch('http://localhost:8000/rf_train', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data, target }),
+    });
+    const out = await res.json();
+    this._model = out.model;
+    this.setOutputData(1, this._model);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    this._pending = false;
+  }
+};
+RandomForestNode.prototype.onExecute = async function() {
+  const data = this.getInputData(0);
+  if (!data || !this._model || this._predicting) return;
+  this._predicting = true;
+  try {
+    const res = await fetch('http://localhost:8000/rf_predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: this._model, data }),
+    });
+    const preds = await res.json();
+    this.setOutputData(0, preds);
+    this.setOutputData(1, this._model);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    this._predicting = false;
+  }
+};
+registerNode('ml/random_forest', RandomForestNode);
+
+function ExplainModelNode() {
+  this.addInput('model', 'string');
+  this.addInput('data', 'array');
+  this.addOutput('contrib', 'array');
+  this.title = 'Explain Model';
+  this.color = '#222';
+  this.bgcolor = '#444';
+}
+ExplainModelNode.title = 'Explain Model';
+ExplainModelNode.icon = '💡';
+ExplainModelNode.prototype.onExecute = async function() {
+  const model = this.getInputData(0);
+  let data = this.getInputData(1);
+  if (!data || this._pending) return;
+  if (Array.isArray(data) && data.length) {
+    if (typeof data[0] === 'number') {
+      data = data.map(v => [v]);
+    } else if (typeof data[0] === 'object' && !Array.isArray(data[0])) {
+      const keys = [];
+      data.forEach(o => {
+        for (const k in o) {
+          if (typeof o[k] === 'number' && !keys.includes(k)) keys.push(k);
+        }
+      });
+      data = data.map(o => keys.map(k => (typeof o[k] === 'number' ? o[k] : 0)));
+    }
+  }
+  this._pending = true;
+  try {
+    const exp = await fetchExplanation(model, data);
+    const first = Array.isArray(exp) && Array.isArray(exp[0]) ? exp[0] : exp;
+    this.setOutputData(0, first);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    this._pending = false;
+  }
+};
+registerNode('ml/explain_model', ExplainModelNode);
 
