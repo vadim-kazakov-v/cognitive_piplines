@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, List
 
+import math
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -38,12 +39,57 @@ class CodeRequest(BaseModel):
     data: Any | None = None
 
 
+
+class Series(BaseModel):
+    """Wrapper for a list of numeric values."""
+
+    data: List[float]
+    params: dict | None = None
+
+def detectAnchoring(values: np.ndarray) -> float:
+    """Simple anchoring bias score based on distance of first item from the rest."""
+    if values.size < 2:
+        return 0.0
+    rest = values[1:]
+    mean_rest = rest.mean()
+    std_rest = rest.std() or 1.0
+    return float(abs(values[0] - mean_rest) / std_rest)
+
+
+def estimateVisualClutter(values: np.ndarray) -> float:
+    """Rough estimate of visual clutter based on unique value ratio."""
+    if values.size == 0:
+        return 0.0
+    unique = np.unique(values).size
+    return float(unique / values.size)
+
+
+def checkScaleBias(values: np.ndarray) -> float:
+    """Detect potential scale bias via max/min ratio."""
+    if values.size == 0:
+        return 0.0
+    min_val = values.min()
+    max_val = values.max()
+    if min_val == 0:
+        return float('inf') if max_val != 0 else 0.0
+    return float(max_val / min_val)
+
+      
+class PaletteParams(BaseModel):
+    """Parameters for palette generation."""
+
+    n: int = 5
+    lightness: float = 70.0
+    chroma: float = 40.0
+
+      
 class ImshowRequest(BaseModel):
     data: List[List[float]]
     cmap: str = "viridis"
     interpolation: str = "nearest"
     vmin: float | None = None
     vmax: float | None = None
+
 
 
 @app.get("/health")
@@ -70,6 +116,57 @@ def describe_table(req: TableData) -> dict:
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return frame.describe(include="all").replace({np.nan: None}).to_dict()
+
+
+
+@app.post("/confidence")
+def confidence_interval(series: Series) -> dict:
+    """Return mean and confidence interval for a numeric series."""
+    params = series.params or {}
+    try:
+        data = np.asarray(series.data, dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    n = data.size
+    if n == 0:
+        return {"mean": None, "lower": None, "upper": None}
+    alpha = float(params.get("alpha", 0.95))
+    mean = float(np.mean(data))
+    if n < 2:
+        return {"mean": mean, "lower": mean, "upper": mean}
+    se = np.std(data, ddof=1) / np.sqrt(n)
+    from scipy.stats import t as t_dist
+
+    h = t_dist.ppf((1 + alpha) / 2, n - 1) * se
+    lower = mean - h
+    upper = mean + h
+    return {"mean": mean, "lower": float(lower), "upper": float(upper)}
+
+@app.post("/bias-report")
+def bias_report(req: TableData) -> dict:
+    """Return simple bias metrics for a sequence of numeric values."""
+    try:
+        values = np.asarray(req.data, dtype=float).flatten()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    anchoring_score = detectAnchoring(values)
+    clutter_score = estimateVisualClutter(values)
+    scale_score = checkScaleBias(values)
+    return {
+        "anchoring": {
+            "score": anchoring_score,
+            "message": "⚠️ anchoring" if anchoring_score > 1 else "✅ ok",
+        },
+        "clutter": {
+            "score": clutter_score,
+            "message": "⚠️ clutter" if clutter_score > 0.7 else "✅ ok",
+        },
+        "scale": {
+            "score": scale_score,
+            "message": "⚠️ scale" if scale_score > 100 else "✅ ok",
+        },
+    }
+
 
 
 @app.post("/tsne")
@@ -405,6 +502,63 @@ def run_python(req: CodeRequest) -> Any:
         return jsonable_encoder(result)
     except Exception as exc:  # pragma: no cover - fallback on serialization issues
         raise HTTPException(status_code=400, detail=f"Unable to serialize result: {exc}")
+
+
+def lch_to_lab(l: float, c: float, h: float) -> tuple[float, float, float]:
+    hr = math.radians(h)
+    return l, math.cos(hr) * c, math.sin(hr) * c
+
+
+def lab_to_rgb(l: float, a: float, b: float) -> list[int]:
+    y = (l + 16.0) / 116.0
+    x = a / 500.0 + y
+    z = y - b / 200.0
+
+    def pivot(t: float) -> float:
+        t3 = t ** 3
+        return t3 if t3 > 0.008856 else (t - 16.0 / 116.0) / 7.787
+
+    x = pivot(x) * 95.047
+    y = pivot(y) * 100.0
+    z = pivot(z) * 108.883
+    x /= 100.0
+    y /= 100.0
+    z /= 100.0
+    r = x * 3.2406 + y * -1.5372 + z * -0.4986
+    g = x * -0.9689 + y * 1.8758 + z * 0.0415
+    b2 = x * 0.0557 + y * -0.2040 + z * 1.0570
+
+    def comp(c: float) -> float:
+        return 1.055 * (c ** (1 / 2.4)) - 0.055 if c > 0.0031308 else 12.92 * c
+
+    r = comp(r)
+    g = comp(g)
+    b2 = comp(b2)
+    return [
+        int(max(0, min(255, round(r * 255)))),
+        int(max(0, min(255, round(g * 255)))),
+        int(max(0, min(255, round(b2 * 255)))),
+    ]
+
+
+def rgb_to_hex(rgb: list[int]) -> str:
+    return "#%02x%02x%02x" % tuple(rgb)
+
+
+def suggest_palette(params: PaletteParams) -> list[str]:
+    colors = []
+    n = max(1, int(params.n))
+    for i in range(n):
+        h = 360 * i / n
+        lab = lch_to_lab(params.lightness, params.chroma, h)
+        colors.append(rgb_to_hex(lab_to_rgb(*lab)))
+    return colors
+
+
+@app.post("/palette")
+def palette_endpoint(req: PaletteParams) -> list[str]:
+    """Return a perceptually spaced colour palette."""
+    return suggest_palette(req)
 
 
 if __name__ == "__main__":

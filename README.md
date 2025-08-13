@@ -43,6 +43,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Bar Chart**, **Scatter Plot**, and **Scatter3D** – visualize numeric data
 - **ImShow** – render 2D arrays with Matplotlib colormaps
 - **Voronoi Diagram** – display Voronoi cells for point sets with selectable X/Y columns
+- **Contrast Focus** – dim unselected areas of an image while keeping a chosen rectangle fully visible; opacity is adjustable
 - **Persistence Diagram**, **Persistence Barcode**, and **Vietoris-Rips** – topological data analysis visuals for point clouds
 - **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, and **KMeans** – run analytics algorithms on arrays of numbers
 - **Spectral**, **GMM** – additional clustering tools
@@ -52,6 +53,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Log** – inspect any data in the developer console
 
 Connect nodes to create analysis pipelines; for instance, link **Titanic Sample → Select Field (Fare) → t‑SNE → Scatter Plot** to see an embedding of fare values.
+To spotlight a portion of an image, route **ImShow → Contrast Focus** and provide a `[x, y, width, height]` mask; use the node's *alpha* slider to tune background dimming. A **Contrast Focus** preset in the sidebar builds this flow automatically.
 
 To visualize a matrix, drop a **Python** node with code:
 
