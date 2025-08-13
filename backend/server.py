@@ -160,7 +160,10 @@ def rf_train(req: RFTrainRequest) -> dict:
     )
     model_bytes = pickle.dumps(model)
     model_str = base64.b64encode(model_bytes).decode("ascii")
-    return {"model": model_str}
+    return {
+        "model": model_str,
+        "importance": model.feature_importances_.tolist(),
+    }
 
 
 @app.post("/rf_predict")
@@ -180,8 +183,15 @@ def rf_predict(req: RFPredictRequest) -> list[float]:
 
 
 @app.post("/explain")
-def explain(req: ExplainRequest) -> list[dict]:
-    """Return feature contributions for a model."""
+def explain(req: ExplainRequest) -> list[list[dict]]:
+    """Return feature contributions for a model.
+
+    The endpoint returns a list for each input row, where each row
+    contains dictionaries mapping feature names to their SHAP
+    contributions. Returning a consistent list-of-lists structure avoids
+    FastAPI's response validation errors when multiple rows are
+    provided.
+    """
     try:
         import shap
     except Exception as exc:  # pragma: no cover - shap missing
@@ -217,7 +227,7 @@ def explain(req: ExplainRequest) -> list[dict]:
                 for f, v in zip(feature_names, row)
             ]
         )
-    return result[0] if len(result) == 1 else result
+    return result
 
 
 @app.post("/confidence")

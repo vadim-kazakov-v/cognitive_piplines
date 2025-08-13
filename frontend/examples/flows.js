@@ -379,6 +379,301 @@ const BIAS_REPORT_FLOW = {
   "version": 0.4
 };
 
+
+const RANDOM_FOREST_FLOW = {
+  "last_node_id": 6,
+  "last_link_id": 7,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "data/random",
+      "pos": [
+        50,
+        150
+      ],
+      "size": {
+        "0": 210,
+        "1": 58
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "data",
+          "type": "array",
+          "links": [
+            1,
+            3,
+            5
+          ]
+        }
+      ],
+      "properties": {
+        "count": 20,
+        "columns": 3,
+        "min": 0,
+        "max": 1,
+        "integer": false
+      },
+      "color": "#222",
+      "bgcolor": "#444"
+    },
+    {
+      "id": 2,
+      "type": "data/random_labels",
+      "pos": [
+        50,
+        240
+      ],
+      "size": {
+        "0": 210,
+        "1": 58
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "data",
+          "type": "array",
+          "link": 1
+        }
+      ],
+      "outputs": [
+        {
+          "name": "labels",
+          "type": "array",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "count": 20,
+        "classes": 2
+      },
+      "color": "#222",
+      "bgcolor": "#444"
+    },
+    {
+      "id": 3,
+      "type": "ml/random_forest",
+      "pos": [
+        280,
+        190
+      ],
+      "size": [
+        240,
+        160
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "data",
+          "type": "array",
+          "link": 3
+        },
+        {
+          "name": "target",
+          "type": "array",
+          "link": 2
+        }
+      ],
+      "outputs": [
+        {
+          "name": "prediction",
+          "type": "array",
+          "links": []
+        },
+        {
+          "name": "model",
+          "type": "string",
+          "links": [
+            4
+          ]
+        },
+        {
+          "name": "importance",
+          "type": "array",
+          "links": []
+        }
+      ],
+      "properties": {},
+      "color": "#222",
+      "bgcolor": "#444"
+    },
+    {
+      "id": 4,
+      "type": "ml/explain_model",
+      "pos": [
+        520,
+        190
+      ],
+      "size": {
+        "0": 200,
+        "1": 100
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "string",
+          "link": 4
+        },
+        {
+          "name": "data",
+          "type": "array",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "contrib",
+          "type": "array",
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {},
+      "color": "#222",
+      "bgcolor": "#444"
+    },
+    {
+      "id": 5,
+      "type": "viz/bar",
+      "pos": [
+        740,
+        190
+      ],
+      "size": {
+        "0": 200,
+        "1": 150
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "data",
+          "type": "array",
+          "link": 6
+        }
+      ],
+      "outputs": [
+        {
+          "name": "image",
+          "type": "string",
+          "links": [
+            7
+          ]
+        }
+      ],
+      "properties": {
+        "field": "contribution"
+      },
+      "color": "#222",
+      "bgcolor": "#444"
+    },
+    {
+      "id": 6,
+      "type": "viz/view",
+      "pos": [
+        960,
+        190
+      ],
+      "size": [
+        200,
+        150
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "string",
+          "link": 7
+        }
+      ],
+      "properties": {},
+      "color": "#222",
+      "bgcolor": "#444"
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      2,
+      0,
+      "array"
+    ],
+    [
+      2,
+      2,
+      0,
+      3,
+      1,
+      "array"
+    ],
+    [
+      3,
+      1,
+      0,
+      3,
+      0,
+      "array"
+    ],
+    [
+      4,
+      3,
+      1,
+      4,
+      0,
+      "string"
+    ],
+    [
+      5,
+      1,
+      0,
+      4,
+      1,
+      "array"
+    ],
+    [
+      6,
+      4,
+      0,
+      5,
+      0,
+      "array"
+    ],
+    [
+      7,
+      5,
+      0,
+      6,
+      0,
+      "string"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+};
+
+
+
+
 const UNCERTAINTY_FLOW = {
   "last_node_id": 3,
   "last_link_id": 2,
@@ -442,3 +737,4 @@ const UNCERTAINTY_FLOW = {
   "extra": {},
   "version": 0.4
 };
+

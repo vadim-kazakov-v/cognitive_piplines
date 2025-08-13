@@ -223,11 +223,33 @@ LofNode.icon = '🚨';
 LofNode.prototype = Object.create(ApiNode.prototype);
 registerNode('ml/lof', LofNode);
 
+function _rfPrepareData(data) {
+  if (Array.isArray(data) && data.length) {
+    if (typeof data[0] === 'number') {
+      return { matrix: data.map(v => [v]), names: ['f0'] };
+    }
+    if (typeof data[0] === 'object' && !Array.isArray(data[0])) {
+      const keys = [];
+      data.forEach(o => {
+        for (const k in o) {
+          if (typeof o[k] === 'number' && !keys.includes(k)) keys.push(k);
+        }
+      });
+      return {
+        matrix: data.map(o => keys.map(k => (typeof o[k] === 'number' ? o[k] : 0))),
+        names: keys,
+      };
+    }
+  }
+  return { matrix: data, names: [] };
+}
+
 function RandomForestNode() {
   this.addInput('data', 'array');
   this.addInput('target', 'array');
   this.addOutput('prediction', 'array');
   this.addOutput('model', 'string');
+   this.addOutput('importance', 'array');
   this.title = 'Random Forest';
   this.color = '#222';
   this.bgcolor = '#444';
@@ -236,9 +258,12 @@ function RandomForestNode() {
 RandomForestNode.title = 'Random Forest';
 RandomForestNode.icon = '🌳';
 RandomForestNode.prototype.train = async function() {
-  const data = this.getInputData(0);
+  let data = this.getInputData(0);
   const target = this.getInputData(1);
   if (!data || !target || this._pending) return;
+  const prep = _rfPrepareData(data);
+  data = prep.matrix;
+  this._featureNames = prep.names;
   this._pending = true;
   try {
     const res = await fetch('http://localhost:8000/rf_train', {
@@ -248,16 +273,20 @@ RandomForestNode.prototype.train = async function() {
     });
     const out = await res.json();
     this._model = out.model;
+    this._importances = out.importance;
     this.setOutputData(1, this._model);
+    this.setOutputData(2, this._importances);
   } catch (err) {
     console.error(err);
   } finally {
     this._pending = false;
+    this.setDirtyCanvas(true);
   }
 };
 RandomForestNode.prototype.onExecute = async function() {
-  const data = this.getInputData(0);
+  let data = this.getInputData(0);
   if (!data || !this._model || this._predicting) return;
+  data = _rfPrepareData(data).matrix;
   this._predicting = true;
   try {
     const res = await fetch('http://localhost:8000/rf_predict', {
@@ -272,6 +301,34 @@ RandomForestNode.prototype.onExecute = async function() {
     console.error(err);
   } finally {
     this._predicting = false;
+  }
+};
+RandomForestNode.prototype.onDrawBackground = function(ctx) {
+  if (this._pending) {
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(0, 0, this.size[0], this.size[1]);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('training...', 10, this.size[1] / 2);
+    return;
+  }
+  if (!this._importances || !this._importances.length) return;
+  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0] - 20;
+  const h = this.size[1] - top - 20;
+  const x0 = 10;
+  const y0 = top + 10;
+  const max = Math.max(...this._importances, 0) || 1;
+  const bw = w / this._importances.length;
+  for (let i = 0; i < this._importances.length; i++) {
+    const v = this._importances[i];
+    const bh = (v / max) * h;
+    ctx.fillStyle = '#3a7';
+    ctx.fillRect(x0 + i * bw, y0 + (h - bh), bw * 0.8, bh);
+    if (this._featureNames && this._featureNames[i]) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '10px sans-serif';
+      ctx.fillText(this._featureNames[i], x0 + i * bw, y0 + h + 10);
+    }
   }
 };
 registerNode('ml/random_forest', RandomForestNode);
