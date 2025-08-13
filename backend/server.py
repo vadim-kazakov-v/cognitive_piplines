@@ -39,6 +39,13 @@ class CodeRequest(BaseModel):
     data: Any | None = None
 
 
+
+class Series(BaseModel):
+    """Wrapper for a list of numeric values."""
+
+    data: List[float]
+    params: dict | None = None
+
 def detectAnchoring(values: np.ndarray) -> float:
     """Simple anchoring bias score based on distance of first item from the rest."""
     if values.size < 2:
@@ -111,6 +118,30 @@ def describe_table(req: TableData) -> dict:
     return frame.describe(include="all").replace({np.nan: None}).to_dict()
 
 
+
+@app.post("/confidence")
+def confidence_interval(series: Series) -> dict:
+    """Return mean and confidence interval for a numeric series."""
+    params = series.params or {}
+    try:
+        data = np.asarray(series.data, dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    n = data.size
+    if n == 0:
+        return {"mean": None, "lower": None, "upper": None}
+    alpha = float(params.get("alpha", 0.95))
+    mean = float(np.mean(data))
+    if n < 2:
+        return {"mean": mean, "lower": mean, "upper": mean}
+    se = np.std(data, ddof=1) / np.sqrt(n)
+    from scipy.stats import t as t_dist
+
+    h = t_dist.ppf((1 + alpha) / 2, n - 1) * se
+    lower = mean - h
+    upper = mean + h
+    return {"mean": mean, "lower": float(lower), "upper": float(upper)}
+
 @app.post("/bias-report")
 def bias_report(req: TableData) -> dict:
     """Return simple bias metrics for a sequence of numeric values."""
@@ -135,6 +166,7 @@ def bias_report(req: TableData) -> dict:
             "message": "⚠️ scale" if scale_score > 100 else "✅ ok",
         },
     }
+
 
 
 @app.post("/tsne")
