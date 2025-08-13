@@ -1,11 +1,17 @@
 from pathlib import Path
 from typing import Any, List
+import os
 
+from dotenv import load_dotenv
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import psycopg2
+from psycopg2.extras import Json
+
+load_dotenv()
 
 app = FastAPI(title="Cognitive Pipelines API")
 app.add_middleware(
@@ -18,6 +24,22 @@ app.add_middleware(
 DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "titanic.csv"
 
 df = pd.read_csv(DATA_PATH)
+
+POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "postgres")
+POSTGRES_DB = os.environ.get("POSTGRES_DB", "postgres")
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}",
+)
+conn = psycopg2.connect(DATABASE_URL)
+with conn.cursor() as cur:
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS feedback (id SERIAL PRIMARY KEY, data JSONB)"
+    )
+    conn.commit()
 
 
 class Matrix(BaseModel):
@@ -62,6 +84,40 @@ def describe_table(req: TableData) -> dict:
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return frame.describe(include="all").replace({np.nan: None}).to_dict()
+
+
+@app.get("/feedback")
+def get_feedback() -> list[dict]:
+    """Return all stored feedback entries including their ids."""
+    with conn.cursor() as cur:
+        cur.execute("SELECT id, data FROM feedback ORDER BY id")
+        rows = cur.fetchall()
+    return [{"id": r[0], "data": r[1]} for r in rows]
+
+
+@app.post("/feedback")
+def save_feedback(feedback: Any) -> dict:
+    """Store a feedback object."""
+    with conn.cursor() as cur:
+        cur.execute("INSERT INTO feedback (data) VALUES (%s)", [Json(feedback)])
+        conn.commit()
+    return {"status": "ok"}
+
+
+class Reaction(BaseModel):
+    reaction: str
+
+
+@app.post("/feedback/{fb_id}/reaction")
+def set_feedback_reaction(fb_id: int, react: Reaction) -> dict:
+    """Store a like or dislike reaction for a feedback entry."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "UPDATE feedback SET data = jsonb_set(data, '{reaction}', %s, true) WHERE id = %s",
+            [Json(react.reaction), fb_id],
+        )
+        conn.commit()
+    return {"status": "ok"}
 
 
 @app.post("/tsne")

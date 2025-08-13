@@ -36,6 +36,7 @@
     }
     #sidebar button,
     #sidebar input,
+    #sidebar textarea,
     #layout-mode {
       background: #444;
       border: 1px solid #666;
@@ -68,6 +69,23 @@
       height: 100%;
       background: #1e1e1e;
     }
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #2b2b2b;
+      padding: 20px;
+      border: 1px solid #444;
+      width: 400px;
+    }
   </style>
 </head>
 <body>
@@ -82,6 +100,7 @@
       <option value="vertical">Vertical</option>
     </select>
     <button id="layout-btn">Auto Layout</button>
+    <button id="feedback-btn">Feedback</button>
     <h3>Presets</h3>
     <div id="preset-list"></div>
     <input id="file-input" type="file" accept="application/json" style="display:none" />
@@ -90,6 +109,14 @@
   </div>
   <div id="main" class="glass">
     <canvas id="graph"></canvas>
+  </div>
+  <div id="feedback-modal" class="modal">
+    <div class="modal-content">
+      <div id="feedback-list" style="max-height:200px; overflow:auto; margin-bottom:10px"></div>
+      <textarea id="feedback-text" rows="5" style="width:100%" placeholder="{\"message\": \"your feedback\"}"></textarea>
+      <button id="send-feedback">Send Feedback</button>
+      <button id="close-feedback">Close</button>
+    </div>
   </div>
   <script src="lib/litegraph.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
@@ -251,6 +278,76 @@
         btn.style.display = btn.textContent.toLowerCase().includes(term) ? '' : 'none';
       });
     });
+
+    const feedbackBtn = document.getElementById('feedback-btn');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackEl = document.getElementById('feedback-text');
+    const feedbackList = document.getElementById('feedback-list');
+
+    feedbackBtn.addEventListener('click', () => {
+      fetch('http://localhost:8000/feedback')
+        .then(res => res.json())
+        .then(data => {
+          feedbackLog = data;
+          updateFeedbackPanel();
+        })
+        .catch(err => console.error(err));
+      feedbackModal.style.display = 'flex';
+    });
+    document.getElementById('close-feedback').addEventListener('click', () => {
+      feedbackModal.style.display = 'none';
+    });
+    document.getElementById('send-feedback').addEventListener('click', () => {
+      try {
+        const obj = JSON.parse(feedbackEl.value);
+        sendFeedback(obj).then(() => {
+          feedbackEl.value = '';
+          return fetch('http://localhost:8000/feedback')
+            .then(res => res.json())
+            .then(data => { feedbackLog = data; updateFeedbackPanel(); });
+        });
+      } catch (err) {
+        console.error('Invalid feedback', err);
+      }
+    });
+    function setReaction(id, reaction) {
+      fetch(`http://localhost:8000/feedback/${id}/reaction`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reaction })
+      })
+        .then(() => {
+          const fb = feedbackLog.find(f => f.id === id);
+          if (fb) fb.data.reaction = reaction;
+          updateFeedbackPanel();
+        })
+        .catch(err => console.error(err));
+    }
+
+    function updateFeedbackPanel() {
+      feedbackList.innerHTML = '';
+      feedbackLog.forEach(fb => {
+        const entry = document.createElement('div');
+        entry.style.border = '1px solid #444';
+        entry.style.padding = '4px';
+        entry.style.marginBottom = '4px';
+        const pre = document.createElement('pre');
+        pre.textContent = JSON.stringify(fb.data, null, 2);
+        entry.appendChild(pre);
+        const likeBtn = document.createElement('button');
+        likeBtn.textContent = '👍';
+        likeBtn.style.marginRight = '4px';
+        likeBtn.addEventListener('click', () => setReaction(fb.id, 'like'));
+        if (fb.data.reaction === 'like') likeBtn.style.background = '#0a0';
+        const dislikeBtn = document.createElement('button');
+        dislikeBtn.textContent = '👎';
+        dislikeBtn.addEventListener('click', () => setReaction(fb.id, 'dislike'));
+        if (fb.data.reaction === 'dislike') dislikeBtn.style.background = '#a00';
+        entry.appendChild(likeBtn);
+        entry.appendChild(dislikeBtn);
+        feedbackList.appendChild(entry);
+      });
+    }
 
     function groupSelectedNodes() {
       const selected = Object.values(canvas.selected_nodes || {});

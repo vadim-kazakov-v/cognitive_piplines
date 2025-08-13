@@ -42,3 +42,22 @@ StatusNode.prototype.onDrawForeground = function(ctx) {
 };
 registerNode('util/status', StatusNode);
 
+let feedbackLog = [];
+
+function recordSelection(path, timestamp) {
+  feedbackLog.push({ id: null, data: { path, timestamp } });
+  if (typeof updateFeedbackPanel === 'function') updateFeedbackPanel();
+}
+
+async function sendFeedback(feedbackObj) {
+  try {
+    await fetch('http://localhost:8000/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(feedbackObj),
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
