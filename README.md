@@ -69,7 +69,7 @@ For topological data analysis, click **TDA Demo** under Presets to load `fronten
 
 A bias report example using the Titanic dataset is available at `frontend/examples/bias_report.json`, selecting the Age field and feeding it into the Bias Report node.
 
-An end-to-end machine learning demo at `examples/random_forest.json` generates random data and labels, trains a Random Forest, and uses the **Explain Model** node to visualize feature contributions.
+Select **Random Forest Demo** under Presets to generate random data and labels, train a Random Forest, and visualize feature contributions with the **Explain Model** node.
 
 ## Docker
 

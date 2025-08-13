@@ -646,6 +646,10 @@ result = {
       graph.configure(JSON.parse(JSON.stringify(BIAS_REPORT_FLOW)));
     }
 
+    function presetRandomForest() {
+      graph.configure(JSON.parse(JSON.stringify(RANDOM_FOREST_FLOW)));
+    }
+
     function presetPaletteDemo() {
       const palette = LiteGraph.createNode('perceptual/palette');
       palette.pos = [50, 150];
@@ -692,6 +696,7 @@ result = {
       { name: 'Voronoi', fn: presetVoronoi },
       { name: 'Bias Report', fn: presetBiasReport },
       { name: 'TDA Demo', fn: presetTDA },
+      { name: 'Random Forest Demo', fn: presetRandomForest },
       { name: 'Uncertainty Demo', fn: presetUncertainty },
       { name: 'Palette Demo', fn: presetPaletteDemo }
     ];
