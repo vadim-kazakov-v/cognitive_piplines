@@ -647,24 +647,13 @@ ImshowNode.prototype.onExecute = async function() {
   if (this._pending) return;
   this._pending = true;
   const { cmap, interpolation, vmin, vmax } = this.properties;
-  const vminArg = vmin === 'auto' || vmin === '' ? 'None' : Number(vmin);
-  const vmaxArg = vmax === 'auto' || vmax === '' ? 'None' : Number(vmax);
-  const code = `
-import io, base64, numpy as np, matplotlib.pyplot as plt
-data = np.array(data)
-fig, ax = plt.subplots()
-ax.imshow(data, cmap='${cmap}', interpolation='${interpolation}', vmin=${vminArg}, vmax=${vmaxArg})
-ax.axis('off')
-buf = io.BytesIO()
-plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-plt.close(fig)
-result = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
-`;
+  const vminArg = vmin === 'auto' || vmin === '' ? null : Number(vmin);
+  const vmaxArg = vmax === 'auto' || vmax === '' ? null : Number(vmax);
   try {
-    const res = await fetch('http://localhost:8000/python', {
+    const res = await fetch('http://localhost:8000/imshow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, data: matrix }),
+      body: JSON.stringify({ data: matrix, cmap, interpolation, vmin: vminArg, vmax: vmaxArg }),
     });
     const img = await res.json();
     this.setOutputData(0, img);

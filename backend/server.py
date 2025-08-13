@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, List
 
+import math
 import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -65,6 +66,23 @@ def checkScaleBias(values: np.ndarray) -> float:
     if min_val == 0:
         return float('inf') if max_val != 0 else 0.0
     return float(max_val / min_val)
+
+      
+class PaletteParams(BaseModel):
+    """Parameters for palette generation."""
+
+    n: int = 5
+    lightness: float = 70.0
+    chroma: float = 40.0
+
+      
+class ImshowRequest(BaseModel):
+    data: List[List[float]]
+    cmap: str = "viridis"
+    interpolation: str = "nearest"
+    vmin: float | None = None
+    vmax: float | None = None
+
 
 
 @app.get("/health")
@@ -398,6 +416,34 @@ def vietoris_rips(matrix: Matrix) -> list[list[int]]:
     return edges
 
 
+@app.post("/imshow")
+def imshow(req: ImshowRequest) -> str:
+    """Render an array as an image using Matplotlib."""
+
+    import base64
+    import io
+    import matplotlib.pyplot as plt
+
+    try:
+        data = np.asarray(req.data, dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    fig, ax = plt.subplots()
+    ax.imshow(
+        data,
+        cmap=req.cmap,
+        interpolation=req.interpolation,
+        vmin=req.vmin,
+        vmax=req.vmax,
+    )
+    ax.axis("off")
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0)
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
 @app.post("/python")
 def run_python(req: CodeRequest) -> Any:
     """Execute arbitrary Python code with optional data."""
@@ -424,6 +470,63 @@ def run_python(req: CodeRequest) -> Any:
         return jsonable_encoder(result)
     except Exception as exc:  # pragma: no cover - fallback on serialization issues
         raise HTTPException(status_code=400, detail=f"Unable to serialize result: {exc}")
+
+
+def lch_to_lab(l: float, c: float, h: float) -> tuple[float, float, float]:
+    hr = math.radians(h)
+    return l, math.cos(hr) * c, math.sin(hr) * c
+
+
+def lab_to_rgb(l: float, a: float, b: float) -> list[int]:
+    y = (l + 16.0) / 116.0
+    x = a / 500.0 + y
+    z = y - b / 200.0
+
+    def pivot(t: float) -> float:
+        t3 = t ** 3
+        return t3 if t3 > 0.008856 else (t - 16.0 / 116.0) / 7.787
+
+    x = pivot(x) * 95.047
+    y = pivot(y) * 100.0
+    z = pivot(z) * 108.883
+    x /= 100.0
+    y /= 100.0
+    z /= 100.0
+    r = x * 3.2406 + y * -1.5372 + z * -0.4986
+    g = x * -0.9689 + y * 1.8758 + z * 0.0415
+    b2 = x * 0.0557 + y * -0.2040 + z * 1.0570
+
+    def comp(c: float) -> float:
+        return 1.055 * (c ** (1 / 2.4)) - 0.055 if c > 0.0031308 else 12.92 * c
+
+    r = comp(r)
+    g = comp(g)
+    b2 = comp(b2)
+    return [
+        int(max(0, min(255, round(r * 255)))),
+        int(max(0, min(255, round(g * 255)))),
+        int(max(0, min(255, round(b2 * 255)))),
+    ]
+
+
+def rgb_to_hex(rgb: list[int]) -> str:
+    return "#%02x%02x%02x" % tuple(rgb)
+
+
+def suggest_palette(params: PaletteParams) -> list[str]:
+    colors = []
+    n = max(1, int(params.n))
+    for i in range(n):
+        h = 360 * i / n
+        lab = lch_to_lab(params.lightness, params.chroma, h)
+        colors.append(rgb_to_hex(lab_to_rgb(*lab)))
+    return colors
+
+
+@app.post("/palette")
+def palette_endpoint(req: PaletteParams) -> list[str]:
+    """Return a perceptually spaced colour palette."""
+    return suggest_palette(req)
 
 
 if __name__ == "__main__":

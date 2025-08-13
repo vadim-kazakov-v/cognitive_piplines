@@ -615,19 +615,25 @@ result = {
     }
 
     function presetTDA() {
-      const rand = LiteGraph.createNode('data/random');
-      rand.pos = [50, 150];
-      rand.properties.columns = 2;
-      rand.properties.count = 40;
-      const vr = LiteGraph.createNode('viz/vietoris_rips');
-      vr.pos = [250, 50];
-      const pd = LiteGraph.createNode('viz/persistence');
-      pd.pos = [250, 250];
-      graph.add(rand);
-      graph.add(vr);
-      graph.add(pd);
-      rand.connect(0, vr, 0);
-      rand.connect(0, pd, 0);
+      return fetch('examples/tda.json')
+        .then(r => r.json())
+        .then(data => {
+          graph.configure(data);
+        });
+    }
+
+    function presetPaletteDemo() {
+      const palette = LiteGraph.createNode('perceptual/palette');
+      palette.pos = [50, 150];
+      const orig = LiteGraph.createNode('util/log');
+      orig.pos = [250, 100];
+      const sim = LiteGraph.createNode('util/log');
+      sim.pos = [250, 200];
+      graph.add(palette);
+      graph.add(orig);
+      graph.add(sim);
+      palette.connect(0, orig, 0);
+      palette.connect(1, sim, 0);
     }
 
     const presets = [
@@ -645,7 +651,8 @@ result = {
       { name: 'Random Scatter', fn: presetRandomScatter },
       { name: 'ImShow Demo', fn: presetImShow },
       { name: 'Voronoi', fn: presetVoronoi },
-      { name: 'TDA Demo', fn: presetTDA }
+      { name: 'TDA Demo', fn: presetTDA },
+      { name: 'Palette Demo', fn: presetPaletteDemo }
     ];
 
     const presetList = document.getElementById('preset-list');
@@ -654,8 +661,12 @@ result = {
       btn.textContent = p.name;
       btn.addEventListener('click', () => {
         graph.clear();
-        p.fn();
-        autoLayout();
+        const maybePromise = p.fn();
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(() => autoLayout());
+        } else {
+          autoLayout();
+        }
       });
       presetList.appendChild(btn);
     });
@@ -664,6 +675,7 @@ result = {
   <script src="nodes/transform.js"></script>
   <script src="nodes/visualize.js"></script>
   <script src="nodes/visualizer.js"></script>
+  <script src="nodes/perceptual.js"></script>
   <script src="nodes/util.js"></script>
   <script src="nodes/bias.js"></script>
   <script src="nodes/ml.js"></script>
