@@ -639,7 +639,15 @@ result = {
     }
 
     function presetTDA() {
-      return fetch('examples/tda.json')
+      return fetch('/examples/tda.json')
+        .then(r => r.json())
+        .then(data => {
+          graph.configure(data);
+        });
+    }
+
+    function presetBiasReport() {
+      return fetch('/examples/bias_report.json')
         .then(r => r.json())
         .then(data => {
           graph.configure(data);
@@ -690,6 +698,7 @@ result = {
       { name: 'Contrast Focus', fn: presetContrastFocus },
       { name: 'ImShow Demo', fn: presetImShow },
       { name: 'Voronoi', fn: presetVoronoi },
+      { name: 'Bias Report', fn: presetBiasReport },
       { name: 'TDA Demo', fn: presetTDA },
       { name: 'Uncertainty Demo', fn: presetUncertainty }
       { name: 'Palette Demo', fn: presetPaletteDemo }
