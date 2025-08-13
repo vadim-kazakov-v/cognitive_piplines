@@ -297,3 +297,90 @@ RescaleNode.prototype.onExecute = function() {
 };
 registerNode('transform/rescale', RescaleNode);
 
+function AutoNumericNode() {
+  this.addInput('data', 'array');
+  this.addOutput('data', 'array');
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.properties = { actions: {} };
+  this._widgets = [];
+  this._columns = null;
+  this._labelMaps = {};
+  this._oneHotCats = {};
+  this._actionValues = ['leave', 'drop', 'one_hot', 'label'];
+}
+AutoNumericNode.title = 'Auto Numeric';
+AutoNumericNode.icon = '🔄';
+AutoNumericNode.prototype.updateColumns = function(data) {
+  if (!Array.isArray(data) || !data.length) return;
+  const cols = Object.keys(data[0]);
+  if (this._columns && cols.join(',') === this._columns.join(',')) return;
+  this._columns = cols;
+
+  // remove old widgets
+  if (this._widgets.length) {
+    this._widgets.forEach(w => this.removeWidget(w));
+    this._widgets.length = 0;
+  }
+
+  cols.forEach(col => {
+    const vals = data.map(r => r[col]);
+    const uniq = Array.from(new Set(vals));
+    const allNumeric = vals.every(v => typeof v === 'number' || !isNaN(parseFloat(v)));
+    let action = this.properties.actions[col];
+    if (!action) {
+      if (allNumeric) action = 'leave';
+      else if (uniq.length <= 10) action = 'one_hot';
+      else action = 'label';
+      this.properties.actions[col] = action;
+    }
+    // store mappings
+    this._labelMaps[col] = {};
+    uniq.forEach((v, i) => (this._labelMaps[col][v] = i));
+    this._oneHotCats[col] = uniq;
+
+    const w = this.addWidget(
+      'combo',
+      col,
+      action,
+      v => (this.properties.actions[col] = v),
+      { values: this._actionValues },
+    );
+    this._widgets.push(w);
+  });
+  this.setSize(this.computeSize());
+};
+AutoNumericNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (!Array.isArray(data) || !data.length) return;
+  this.updateColumns(data);
+  const out = data.map(row => {
+    const obj = {};
+    this._columns.forEach(col => {
+      const action = this.properties.actions[col];
+      const value = row[col];
+      if (action === 'drop') return;
+      if (action === 'leave') {
+        const num = parseFloat(value);
+        obj[col] = isNaN(num) ? 0 : num;
+      } else if (action === 'label') {
+        const mapping = this._labelMaps[col];
+        let num = mapping[value];
+        if (num === undefined) {
+          num = Object.keys(mapping).length;
+          mapping[value] = num;
+        }
+        obj[col] = num;
+      } else if (action === 'one_hot') {
+        const cats = this._oneHotCats[col];
+        cats.forEach(cat => {
+          obj[`${col}_${cat}`] = value === cat ? 1 : 0;
+        });
+      }
+    });
+    return obj;
+  });
+  this.setOutputData(0, out);
+};
+registerNode('transform/autonumeric', AutoNumericNode);
+
