@@ -9,7 +9,7 @@ import pickle
 import math
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import psycopg2
@@ -205,10 +205,11 @@ def get_feedback() -> list[dict]:
 
 
 @app.post("/feedback")
-def save_feedback(feedback: Any) -> dict:
-    """Store a feedback object."""
+def save_feedback(feedback: str = Body(..., media_type="text/plain")) -> dict:
+    """Store a feedback message sent as plain text."""
+    entry = {"message": feedback}
     with conn.cursor() as cur:
-        cur.execute("INSERT INTO feedback (data) VALUES (%s)", [Json(feedback)])
+        cur.execute("INSERT INTO feedback (data) VALUES (%s)", [Json(entry)])
         conn.commit()
     return {"status": "ok"}
 

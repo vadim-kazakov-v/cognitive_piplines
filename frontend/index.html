@@ -113,7 +113,7 @@
   <div id="feedback-modal" class="modal">
     <div class="modal-content">
       <div id="feedback-list" style="max-height:200px; overflow:auto; margin-bottom:10px"></div>
-      <textarea id="feedback-text" rows="5" style="width:100%" placeholder="{\"message\": \"your feedback\"}"></textarea>
+      <textarea id="feedback-text" rows="5" style="width:100%" placeholder="your feedback"></textarea>
       <button id="send-feedback">Send Feedback</button>
       <button id="close-feedback">Close</button>
     </div>
@@ -298,17 +298,14 @@
       feedbackModal.style.display = 'none';
     });
     document.getElementById('send-feedback').addEventListener('click', () => {
-      try {
-        const obj = JSON.parse(feedbackEl.value);
-        sendFeedback(obj).then(() => {
-          feedbackEl.value = '';
-          return fetch('http://localhost:8000/feedback')
-            .then(res => res.json())
-            .then(data => { feedbackLog = data; updateFeedbackPanel(); });
-        });
-      } catch (err) {
-        console.error('Invalid feedback', err);
-      }
+      const text = feedbackEl.value.trim();
+      if (!text) return;
+      sendFeedback(text).then(() => {
+        feedbackEl.value = '';
+        return fetch('http://localhost:8000/feedback')
+          .then(res => res.json())
+          .then(data => { feedbackLog = data; updateFeedbackPanel(); });
+      });
     });
     function setReaction(id, reaction) {
       fetch(`http://localhost:8000/feedback/${id}/reaction`, {
@@ -332,7 +329,7 @@
         entry.style.padding = '4px';
         entry.style.marginBottom = '4px';
         const pre = document.createElement('pre');
-        pre.textContent = JSON.stringify(fb.data, null, 2);
+        pre.textContent = fb.data.message ?? JSON.stringify(fb.data, null, 2);
         entry.appendChild(pre);
         const likeBtn = document.createElement('button');
         likeBtn.textContent = '👍';

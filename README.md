@@ -83,4 +83,7 @@ docker compose up --build
 Database credentials are configured via the `.env` file in the project root. Adjust
 `POSTGRES_USER`, `POSTGRES_PASSWORD`, and related settings there if needed.
 
+PostgreSQL stores its data files in the `data/postgres` directory on the host. The
+bind mount avoids running out of space on the default Docker volume.
+
 The API will be available at [http://localhost:8000](http://localhost:8000) and the frontend at [http://localhost:8080](http://localhost:8080).

@@ -49,12 +49,12 @@ function recordSelection(path, timestamp) {
   if (typeof updateFeedbackPanel === 'function') updateFeedbackPanel();
 }
 
-async function sendFeedback(feedbackObj) {
+async function sendFeedback(text) {
   try {
     await fetch('http://localhost:8000/feedback', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(feedbackObj),
+      headers: { 'Content-Type': 'text/plain' },
+      body: text,
     });
   } catch (err) {
     console.error(err);
