@@ -546,7 +546,7 @@ const RANDOM_FOREST_FLOW = {
     },
     {
       "id": 5,
-      "type": "viz/bar_chart",
+      "type": "viz/bar",
       "pos": [
         740,
         190
