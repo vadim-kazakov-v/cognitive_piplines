@@ -61,9 +61,11 @@ result = np.random.rand(20, 20).tolist()
 ```
 
 Connect its output to **ImShow** and set `cmap="viridis"` with `interpolation="bilinear"` to see a smooth, viridis-colored grid.
-An example flow demonstrating this pipeline is available at `examples/imshow.json`; load it via the **Load Flow** button.
+An example flow demonstrating this pipeline is available at `frontend/examples/imshow.json`; load it via the **Load Flow** button.
 
-For topological data analysis, click **TDA Demo** under Presets to load `examples/tda.json`, showcasing the **Vietoris-Rips**, **Persistence Diagram**, and **Persistence Barcode** nodes connected to a random point cloud.
+For topological data analysis, click **TDA Demo** under Presets to load `frontend/examples/tda.json`, showcasing the **Vietoris-Rips**, **Persistence Diagram**, and **Persistence Barcode** nodes connected to a random point cloud.
+
+A bias report example using the Titanic dataset is available at `frontend/examples/bias_report.json`, computing survival rates by gender and presenting them in a table.
 
 ## Docker
 
