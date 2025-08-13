@@ -723,7 +723,8 @@ ImshowNode.prototype.onExecute = async function() {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || res.statusText);
     }
-    const img = await res.text();
+    const raw = await res.text();
+    const img = raw.startsWith('"') ? JSON.parse(raw) : raw;
     this.setOutputData(0, img);
     if (img !== this._current) {
       this._current = img;
