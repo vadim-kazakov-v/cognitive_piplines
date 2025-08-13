@@ -661,17 +661,7 @@ result = {
     }
 
     function presetUncertainty() {
-      const rand = LiteGraph.createNode('data/random_series');
-      rand.pos = [50, 150];
-      const unc = LiteGraph.createNode('viz/uncertainty');
-      unc.pos = [260, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [470, 150];
-      graph.add(rand);
-      graph.add(unc);
-      graph.add(view);
-      rand.connect(0, unc, 0);
-      unc.connect(0, view, 0);
+      graph.configure(JSON.parse(JSON.stringify(UNCERTAINTY_FLOW)));
     }
 
     const presets = [
