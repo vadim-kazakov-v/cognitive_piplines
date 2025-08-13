@@ -71,6 +71,11 @@ function VisualizerNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
+  addSaveImageMenu(
+    this,
+    'image.png',
+    () => captureNodeImage(this, VisualizerNode.prototype.onDrawBackground)
+  );
 }
 VisualizerNode.title = 'Visualizer';
 VisualizerNode.icon = '\uD83D\uDDBC\uFE0F';

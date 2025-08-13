@@ -1,6 +1,6 @@
 {
-  "last_node_id": 3,
-  "last_link_id": 2,
+  "last_node_id": 2,
+  "last_link_id": 1,
   "nodes": [
     {
       "id": 1,
@@ -63,9 +63,7 @@
         {
           "name": "image",
           "type": "string",
-          "links": [
-            2
-          ]
+          "links": []
         }
       ],
       "properties": {
@@ -76,50 +74,10 @@
       },
       "color": "#222",
       "bgcolor": "#444"
-    },
-    {
-      "id": 3,
-      "type": "viz/view",
-      "pos": [
-        450,
-        150
-      ],
-      "size": [
-        200,
-        150
-      ],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "string",
-          "link": 2
-        }
-      ],
-      "properties": {},
-      "color": "#222",
-      "bgcolor": "#444"
     }
   ],
   "links": [
-    [
-      1,
-      1,
-      0,
-      2,
-      0,
-      "array"
-    ],
-    [
-      2,
-      2,
-      0,
-      3,
-      0,
-      "string"
-    ]
+    [1, 1, 0, 2, 0, "array"]
   ],
   "groups": [],
   "config": {},

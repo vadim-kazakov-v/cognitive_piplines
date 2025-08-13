@@ -1,6 +1,6 @@
 const TDA_FLOW = {
-  "last_node_id": 7,
-  "last_link_id": 8,
+  "last_node_id": 4,
+  "last_link_id": 6,
   "nodes": [
     {
       "id": 1,
@@ -65,9 +65,7 @@ const TDA_FLOW = {
         {
           "name": "image",
           "type": "string",
-          "links": [
-            4
-          ]
+          "links": []
         },
         {
           "name": "eps",
@@ -114,9 +112,7 @@ const TDA_FLOW = {
         {
           "name": "image",
           "type": "string",
-          "links": [
-            7
-          ]
+          "links": []
         }
       ],
       "properties": {},
@@ -153,156 +149,20 @@ const TDA_FLOW = {
         {
           "name": "image",
           "type": "string",
-          "links": [
-            8
-          ]
+          "links": []
         }
       ],
       "properties": {},
-      "color": "#222",
-      "bgcolor": "#444"
-    },
-    {
-      "id": 5,
-      "type": "viz/view",
-      "pos": [
-        650,
-        150
-      ],
-      "size": [
-        200,
-        150
-      ],
-      "flags": {},
-      "order": 4,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "string",
-          "link": 4
-        }
-      ],
-      "properties": {},
-      "color": "#222",
-      "bgcolor": "#444"
-    },
-    {
-      "id": 6,
-      "type": "viz/view",
-      "pos": [
-        850,
-        50
-      ],
-      "size": [
-        200,
-        150
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "string",
-          "link": 7
-        }
-      ],
-      "properties": {},
-      "color": "#222",
-      "bgcolor": "#444"
-    },
-    {
-      "id": 7,
-      "type": "viz/view",
-      "pos": [
-        850,
-        250
-      ],
-      "size": [
-        200,
-        150
-      ],
-      "flags": {},
-      "order": 6,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "string",
-          "link": 8
-        }
-      ],
-      "properties": {},
-      "color": "#222",
-      "bgcolor": "#444"
-    }
+        "color": "#222",
+        "bgcolor": "#444"
+      }
   ],
   "links": [
-    [
-      1,
-      1,
-      0,
-      2,
-      0,
-      "array"
-    ],
-    [
-      2,
-      1,
-      0,
-      3,
-      0,
-      "array"
-    ],
-    [
-      3,
-      1,
-      0,
-      4,
-      0,
-      "array"
-    ],
-    [
-      4,
-      2,
-      0,
-      5,
-      0,
-      "string"
-    ],
-    [
-      5,
-      2,
-      1,
-      3,
-      1,
-      "number"
-    ],
-    [
-      6,
-      2,
-      1,
-      4,
-      1,
-      "number"
-    ],
-    [
-      7,
-      3,
-      0,
-      6,
-      0,
-      "string"
-    ],
-    [
-      8,
-      4,
-      0,
-      7,
-      0,
-      "string"
-    ]
+    [1, 1, 0, 2, 0, "array"],
+    [2, 1, 0, 3, 0, "array"],
+    [3, 1, 0, 4, 0, "array"],
+    [5, 2, 1, 3, 1, "number"],
+    [6, 2, 1, 4, 1, "number"]
   ],
   "groups": [],
   "config": {},
@@ -381,8 +241,8 @@ const BIAS_REPORT_FLOW = {
 
 
 const RANDOM_FOREST_FLOW = {
-  "last_node_id": 6,
-  "last_link_id": 7,
+  "last_node_id": 5,
+  "last_link_id": 6,
   "nodes": [
     {
       "id": 1,
@@ -570,39 +430,12 @@ const RANDOM_FOREST_FLOW = {
         {
           "name": "image",
           "type": "string",
-          "links": [
-            7
-          ]
+          "links": []
         }
       ],
       "properties": {
         "field": "contribution"
       },
-      "color": "#222",
-      "bgcolor": "#444"
-    },
-    {
-      "id": 6,
-      "type": "viz/view",
-      "pos": [
-        960,
-        190
-      ],
-      "size": [
-        200,
-        150
-      ],
-      "flags": {},
-      "order": 5,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "image",
-          "type": "string",
-          "link": 7
-        }
-      ],
-      "properties": {},
       "color": "#222",
       "bgcolor": "#444"
     }
@@ -655,14 +488,6 @@ const RANDOM_FOREST_FLOW = {
       5,
       0,
       "array"
-    ],
-    [
-      7,
-      5,
-      0,
-      6,
-      0,
-      "string"
     ]
   ],
   "groups": [],
@@ -675,8 +500,8 @@ const RANDOM_FOREST_FLOW = {
 
 
 const UNCERTAINTY_FLOW = {
-  "last_node_id": 3,
-  "last_link_id": 2,
+  "last_node_id": 2,
+  "last_link_id": 1,
   "nodes": [
     {
       "id": 1,
@@ -706,31 +531,16 @@ const UNCERTAINTY_FLOW = {
         { "name": "data", "type": "array", "link": 1 }
       ],
       "outputs": [
-        { "name": "image", "type": "string", "links": [2] }
+        { "name": "image", "type": "string", "links": [] }
       ],
       "properties": {},
       "color": "#222",
       "bgcolor": "#444"
     },
-    {
-      "id": 3,
-      "type": "viz/view",
-      "pos": [470, 150],
-      "size": [200, 150],
-      "flags": {},
-      "order": 2,
-      "mode": 0,
-      "inputs": [
-        { "name": "image", "type": "string", "link": 2 }
-      ],
-      "properties": {},
-      "color": "#222",
-      "bgcolor": "#444"
     }
   ],
   "links": [
-    [1, 1, 0, 2, 0, "array"],
-    [2, 2, 0, 3, 0, "string"]
+    [1, 1, 0, 2, 0, "array"]
   ],
   "groups": [],
   "config": {},
