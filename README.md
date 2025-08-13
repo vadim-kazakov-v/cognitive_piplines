@@ -80,4 +80,7 @@ Run the stack with Docker Compose:
 docker compose up --build
 ```
 
+Database credentials are configured via the `.env` file in the project root. Adjust
+`POSTGRES_USER`, `POSTGRES_PASSWORD`, and related settings there if needed.
+
 The API will be available at [http://localhost:8000](http://localhost:8000) and the frontend at [http://localhost:8080](http://localhost:8080).
