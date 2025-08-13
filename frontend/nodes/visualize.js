@@ -36,6 +36,70 @@ function hexToRgb(hex) {
   return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
 }
 
+function drawConfidenceInterval(mean, lower, upper) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 200;
+  canvas.height = 100;
+  const ctx = canvas.getContext('2d');
+  drawPlotArea(ctx, canvas.width, canvas.height);
+  const margin = 10;
+  const w = canvas.width - margin * 2;
+  const h = canvas.height;
+  const scale = w / ((upper - lower) || 1);
+  const y = h / 2;
+  const xLower = margin;
+  const xUpper = margin + w;
+  const xMean = margin + (mean - lower) * scale;
+  ctx.strokeStyle = '#3a7';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(xLower, y);
+  ctx.lineTo(xUpper, y);
+  ctx.stroke();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(xMean, y - 8);
+  ctx.lineTo(xMean, y + 8);
+  ctx.stroke();
+  return canvas.toDataURL();
+}
+
+function showProbabilityHeatmap(matrix) {
+  if (!Array.isArray(matrix) || !matrix.length) return '';
+  const rows = matrix.length;
+  const cols = matrix[0].length;
+  const canvas = document.createElement('canvas');
+  canvas.width = cols;
+  canvas.height = rows;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(cols, rows);
+  let min = Infinity;
+  let max = -Infinity;
+  for (const row of matrix) {
+    for (const v of row) {
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+  }
+  const range = max - min || 1;
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      const v = matrix[y][x];
+      const norm = (v - min) / range;
+      const r = Math.round(norm * 255);
+      const b = Math.round((1 - norm) * 255);
+      const idx = (y * cols + x) * 4;
+      img.data[idx] = r;
+      img.data[idx + 1] = 0;
+      img.data[idx + 2] = b;
+      img.data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return canvas.toDataURL();
+}
+
 function setupFieldSelector(node) {
   node.addProperty('field', '');
   node._fieldWidget = node.addWidget(
@@ -647,26 +711,20 @@ ImshowNode.prototype.onExecute = async function() {
   if (this._pending) return;
   this._pending = true;
   const { cmap, interpolation, vmin, vmax } = this.properties;
-  const vminArg = vmin === 'auto' || vmin === '' ? 'None' : Number(vmin);
-  const vmaxArg = vmax === 'auto' || vmax === '' ? 'None' : Number(vmax);
-  const code = `
-import io, base64, numpy as np, matplotlib.pyplot as plt
-data = np.array(data)
-fig, ax = plt.subplots()
-ax.imshow(data, cmap='${cmap}', interpolation='${interpolation}', vmin=${vminArg}, vmax=${vmaxArg})
-ax.axis('off')
-buf = io.BytesIO()
-plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-plt.close(fig)
-result = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
-`;
+  const vminArg = vmin === 'auto' || vmin === '' ? null : Number(vmin);
+  const vmaxArg = vmax === 'auto' || vmax === '' ? null : Number(vmax);
   try {
-    const res = await fetch('http://localhost:8000/python', {
+    const res = await fetch('http://localhost:8000/imshow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, data: matrix }),
+      body: JSON.stringify({ data: matrix, cmap, interpolation, vmin: vminArg, vmax: vmaxArg }),
     });
-    const img = await res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || res.statusText);
+    }
+    const raw = await res.text();
+    const img = raw.startsWith('"') ? JSON.parse(raw) : raw;
     this.setOutputData(0, img);
     if (img !== this._current) {
       this._current = img;
@@ -675,7 +733,7 @@ result = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('asc
       this._img.src = img;
     }
   } catch (err) {
-    console.error(err);
+    console.error('ImshowNode:', err);
   } finally {
     this._pending = false;
   }
@@ -1566,6 +1624,7 @@ function VoronoiNode() {
   this.addOutput('image', 'string');
   this.addProperty('x', 'col1');
   this.addProperty('y', 'col2');
+  this.addProperty('interpolation', 'nearest');
   this.size = [200, 150];
   this.resizable = true;
   this._zoom = 1;
@@ -1575,6 +1634,13 @@ function VoronoiNode() {
   enableInteraction(this);
   this.addWidget('text', 'x', this.properties.x, v => (this.properties.x = v));
   this.addWidget('text', 'y', this.properties.y, v => (this.properties.y = v));
+  this.addWidget(
+    'combo',
+    'interp',
+    this.properties.interpolation,
+    v => (this.properties.interpolation = v),
+    { values: ['nearest', 'linear'], property: 'interpolation' }
+  );
   this.addWidget('button', '\uD83D\uDCBE', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
@@ -1632,20 +1698,45 @@ VoronoiNode.prototype.onDrawBackground = function(ctx) {
     const py = minY + ((h - y) / h) * ((maxY - minY) || 1);
     for (let x = 0; x < w; x++) {
       const px = minX + (x / w) * ((maxX - minX) || 1);
-      let best = 0;
-      let bestDist = Infinity;
-      for (let i = 0; i < pts.length; i++) {
-        const dx = px - pts[i][0];
-        const dy = py - pts[i][1];
-        const d = dx * dx + dy * dy;
-        if (d < bestDist) { bestDist = d; best = i; }
-      }
-      const rgb = hexToRgb(labelColor(this._colors && this._colors[best]));
       const idx = (y * w + x) * 4;
-      data[idx] = rgb[0];
-      data[idx + 1] = rgb[1];
-      data[idx + 2] = rgb[2];
-      data[idx + 3] = 255;
+      if (this.properties.interpolation === 'nearest') {
+        let best = 0;
+        let bestDist = Infinity;
+        for (let i = 0; i < pts.length; i++) {
+          const dx = px - pts[i][0];
+          const dy = py - pts[i][1];
+          const d = dx * dx + dy * dy;
+          if (d < bestDist) { bestDist = d; best = i; }
+        }
+        const rgb = hexToRgb(labelColor(this._colors && this._colors[best]));
+        data[idx] = rgb[0];
+        data[idx + 1] = rgb[1];
+        data[idx + 2] = rgb[2];
+        data[idx + 3] = 255;
+      } else {
+        const weights = [];
+        for (let i = 0; i < pts.length; i++) {
+          const dx = px - pts[i][0];
+          const dy = py - pts[i][1];
+          const d = dx * dx + dy * dy || 1e-6;
+          weights.push({ i, w: 1 / d });
+        }
+        weights.sort((a, b) => b.w - a.w);
+        const k = Math.min(3, weights.length);
+        let r = 0, g = 0, b = 0, sum = 0;
+        for (let j = 0; j < k; j++) {
+          const rgb = hexToRgb(labelColor(this._colors && this._colors[weights[j].i]));
+          const wj = weights[j].w;
+          r += rgb[0] * wj;
+          g += rgb[1] * wj;
+          b += rgb[2] * wj;
+          sum += wj;
+        }
+        data[idx] = Math.round(r / sum);
+        data[idx + 1] = Math.round(g / sum);
+        data[idx + 2] = Math.round(b / sum);
+        data[idx + 3] = 255;
+      }
     }
   }
   octx.putImageData(img, 0, 0);
@@ -1977,3 +2068,151 @@ VietorisRipsNode.prototype.onDrawBackground = function(ctx) {
   ctx.restore();
 };
 registerNode('viz/vietoris_rips', VietorisRipsNode);
+
+
+function UncertaintyNode() {
+  this.addInput('data', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  enableInteraction(this);
+}
+UncertaintyNode.title = 'Uncertainty';
+UncertaintyNode.icon = '❓';
+UncertaintyNode.prototype.onExecute = async function() {
+  const data = this.getInputData(0);
+  if (!data) return;
+  if (Array.isArray(data) && typeof data[0] === 'number') {
+    if (this._pending) return;
+    this._pending = true;
+    try {
+      const res = await fetch('http://localhost:8000/confidence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data }),
+      });
+      const { mean, lower, upper } = await res.json();
+      const img = drawConfidenceInterval(mean, lower, upper);
+      this.setOutputData(0, img);
+      if (img !== this._current) {
+        this._current = img;
+        this._img = new Image();
+        this._img.onload = () => this.setDirtyCanvas(true, true);
+        this._img.src = img;
+        this.setDirtyCanvas(true, true);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      this._pending = false;
+    }
+  } else if (Array.isArray(data) && Array.isArray(data[0])) {
+    const img = showProbabilityHeatmap(data);
+    this.setOutputData(0, img);
+    if (img !== this._current) {
+      this._current = img;
+      this._img = new Image();
+      this._img.onload = () => this.setDirtyCanvas(true, true);
+      this._img.src = img;
+      this.setDirtyCanvas(true, true);
+    }
+  }
+};
+UncertaintyNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._img) return;
+  const top =
+    LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  ctx.drawImage(this._img, 0, 0, w, h);
+  ctx.restore();
+};
+registerNode('viz/uncertainty', UncertaintyNode);
+
+
+function ContrastFocusNode() {
+  this.addInput('image', 'string');
+  this.addInput('mask', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.properties = { alpha: 0.5 };
+  enableInteraction(this);
+  this.addWidget('slider', 'alpha', this.properties.alpha, v => this.dimUnselected(v), {
+    min: 0,
+    max: 1,
+    step: 0.05,
+  });
+}
+ContrastFocusNode.title = 'Contrast Focus';
+ContrastFocusNode.icon = '🌗';
+ContrastFocusNode.prototype.highlightSelection = function(data, mask) {
+  if (!data) return null;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = data.width;
+  canvas.height = data.height;
+  ctx.drawImage(data, 0, 0);
+  ctx.fillStyle = `rgba(0,0,0,${this.properties.alpha})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (Array.isArray(mask) && mask.length === 4) {
+    const [x, y, w, h] = mask.map(Number);
+    ctx.clearRect(x, y, w, h);
+  }
+  return canvas.toDataURL();
+};
+ContrastFocusNode.prototype.dimUnselected = function(alpha) {
+  this.properties.alpha = Number(alpha);
+  this._processed = null;
+  this.setDirtyCanvas(true, true);
+};
+ContrastFocusNode.prototype.onExecute = function() {
+  const imgSrc = this.getInputData(0);
+  const mask = this.getInputData(1);
+  if (!imgSrc) return;
+  if (imgSrc !== this._current) {
+    this._current = imgSrc;
+    this._img = new Image();
+    this._img.onload = () => {
+      this._processed = null;
+      this.setDirtyCanvas(true, true);
+    };
+    this._img.src = imgSrc;
+  }
+  this._mask = mask;
+  if (this._img && this._img.complete && this._img.naturalWidth) {
+    if (!this._processed) {
+      const out = this.highlightSelection(this._img, this._mask);
+      this._processed = new Image();
+      this._processed.onload = () => this.setDirtyCanvas(true, true);
+      this._processed.src = out;
+      this.setOutputData(0, out);
+    } else {
+      this.setOutputData(0, this._processed.src);
+    }
+  }
+};
+ContrastFocusNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._processed) return;
+  const top =
+    LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  ctx.drawImage(this._processed, 0, 0, w, h);
+  ctx.restore();
+};
+registerNode('viz/contrast_focus', ContrastFocusNode);

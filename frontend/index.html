@@ -104,7 +104,7 @@
     <h3>Presets</h3>
     <div id="preset-list"></div>
     <input id="file-input" type="file" accept="application/json" style="display:none" />
-    <input id="node-search" placeholder="Search nodes" />
+    <input id="node-search" placeholder="Search nodes (e.g., HyperDR)" />
     <div id="node-list"></div>
   </div>
   <div id="main" class="glass">
@@ -679,6 +679,30 @@ result = {
       labels.connect(0, scatter, 1);
     }
 
+    function presetContrastFocus() {
+      const py = LiteGraph.createNode('util/python');
+      py.pos = [50, 150];
+      py.properties.code = "import numpy as np\nresult = np.random.rand(100,100).tolist()";
+      const im = LiteGraph.createNode('viz/imshow');
+      im.pos = [250, 150];
+      const mask = LiteGraph.createNode('util/python');
+      mask.pos = [250, 300];
+      mask.properties.code = "[30, 30, 40, 40]";
+      const focus = LiteGraph.createNode('viz/contrast_focus');
+      focus.pos = [450, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [650, 150];
+      graph.add(py);
+      graph.add(im);
+      graph.add(mask);
+      graph.add(focus);
+      graph.add(view);
+      py.connect(0, im, 0);
+      im.connect(0, focus, 0);
+      mask.connect(0, focus, 1);
+      focus.connect(0, view, 0);
+    }
+
     function presetImShow() {
       const py = LiteGraph.createNode('util/python');
       py.pos = [50, 150];
@@ -712,19 +736,33 @@ result = {
     }
 
     function presetTDA() {
-      const rand = LiteGraph.createNode('data/random');
-      rand.pos = [50, 150];
-      rand.properties.columns = 2;
-      rand.properties.count = 40;
-      const vr = LiteGraph.createNode('viz/vietoris_rips');
-      vr.pos = [250, 50];
-      const pd = LiteGraph.createNode('viz/persistence');
-      pd.pos = [250, 250];
-      graph.add(rand);
-      graph.add(vr);
-      graph.add(pd);
-      rand.connect(0, vr, 0);
-      rand.connect(0, pd, 0);
+      graph.configure(JSON.parse(JSON.stringify(TDA_FLOW)));
+    }
+
+    function presetBiasReport() {
+      graph.configure(JSON.parse(JSON.stringify(BIAS_REPORT_FLOW)));
+    }
+
+    function presetRandomForest() {
+      graph.configure(JSON.parse(JSON.stringify(RANDOM_FOREST_FLOW)));
+    }
+
+    function presetPaletteDemo() {
+      const palette = LiteGraph.createNode('perceptual/palette');
+      palette.pos = [50, 150];
+      const orig = LiteGraph.createNode('util/log');
+      orig.pos = [250, 100];
+      const sim = LiteGraph.createNode('util/log');
+      sim.pos = [250, 200];
+      graph.add(palette);
+      graph.add(orig);
+      graph.add(sim);
+      palette.connect(0, orig, 0);
+      palette.connect(1, sim, 0);
+    }
+
+    function presetUncertainty() {
+      graph.configure(JSON.parse(JSON.stringify(UNCERTAINTY_FLOW)));
     }
 
     const presets = [
@@ -740,9 +778,14 @@ result = {
       { name: 'Random Graph', fn: presetRandomGraph },
       { name: 'Glyphs', fn: presetGlyphs },
       { name: 'Random Scatter', fn: presetRandomScatter },
+      { name: 'Contrast Focus', fn: presetContrastFocus },
       { name: 'ImShow Demo', fn: presetImShow },
       { name: 'Voronoi', fn: presetVoronoi },
-      { name: 'TDA Demo', fn: presetTDA }
+      { name: 'Bias Report', fn: presetBiasReport },
+      { name: 'TDA Demo', fn: presetTDA },
+      { name: 'Random Forest Demo', fn: presetRandomForest },
+      { name: 'Uncertainty Demo', fn: presetUncertainty },
+      { name: 'Palette Demo', fn: presetPaletteDemo }
     ];
 
     const presetList = document.getElementById('preset-list');
@@ -751,17 +794,24 @@ result = {
       btn.textContent = p.name;
       btn.addEventListener('click', () => {
         graph.clear();
-        p.fn();
-        autoLayout();
+        const maybePromise = p.fn();
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(() => autoLayout());
+        } else {
+          autoLayout();
+        }
       });
       presetList.appendChild(btn);
     });
   </script>
+  <script src="examples/flows.js"></script>
   <script src="nodes/data.js"></script>
   <script src="nodes/transform.js"></script>
   <script src="nodes/visualize.js"></script>
   <script src="nodes/visualizer.js"></script>
+  <script src="nodes/perceptual.js"></script>
   <script src="nodes/util.js"></script>
+  <script src="nodes/bias.js"></script>
   <script src="nodes/ml.js"></script>
   <script src="nodes/python.js"></script>
   <script>presetSimpleUMAP(); autoLayout(); graph.start();</script>

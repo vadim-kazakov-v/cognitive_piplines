@@ -27,6 +27,7 @@ Additional endpoints provide machine learning helpers used by the UI:
 - `/pca` – dimensionality reduction via PCA
 - `/isolation_forest` – anomaly detection with Isolation Forest
 - `/lof` – anomaly detection with Local Outlier Factor
+- `/hyperdr` – hybrid dimensionality reduction via autoencoder or SOM
 
 ## Frontend
 
@@ -42,9 +43,10 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **To Number**, **To String**, **To Boolean**, and **Rescale** – convert values or scale numeric ranges
 - **Bar Chart**, **Scatter Plot**, and **Scatter3D** – visualize numeric data
 - **ImShow** – render 2D arrays with Matplotlib colormaps
-- **Voronoi Diagram** – display Voronoi cells for point sets with selectable X/Y columns
+- **Voronoi Diagram** – display Voronoi cells for point sets with selectable X/Y columns and optional color interpolation
+- **Contrast Focus** – dim unselected areas of an image while keeping a chosen rectangle fully visible; opacity is adjustable
 - **Persistence Diagram**, **Persistence Barcode**, and **Vietoris-Rips** – topological data analysis visuals for point clouds
-- **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, and **KMeans** – run analytics algorithms on arrays of numbers
+- **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, **KMeans**, and **HyperDR** – run analytics algorithms on arrays of numbers
 - **Spectral**, **GMM** – additional clustering tools
 - **Isolation Forest**, **Local Outlier Factor** – anomaly detection
 - **Random Series**, **Sine Wave** – generate time-series data
@@ -52,6 +54,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Log** – inspect any data in the developer console
 
 Connect nodes to create analysis pipelines; for instance, link **Titanic Sample → Select Field (Fare) → t‑SNE → Scatter Plot** to see an embedding of fare values.
+To spotlight a portion of an image, route **ImShow → Contrast Focus** and provide a `[x, y, width, height]` mask; use the node's *alpha* slider to tune background dimming. A **Contrast Focus** preset in the sidebar builds this flow automatically.
 
 To visualize a matrix, drop a **Python** node with code:
 
@@ -61,7 +64,13 @@ result = np.random.rand(20, 20).tolist()
 ```
 
 Connect its output to **ImShow** and set `cmap="viridis"` with `interpolation="bilinear"` to see a smooth, viridis-colored grid.
-An example flow demonstrating this pipeline is available at `examples/imshow.json`; load it via the **Load Flow** button.
+An example flow demonstrating this pipeline is available at `frontend/examples/imshow.json`; load it via the **Load Flow** button.
+
+For topological data analysis, click **TDA Demo** under Presets to load `frontend/examples/tda.json`, showcasing the **Vietoris-Rips**, **Persistence Diagram**, and **Persistence Barcode** nodes connected to a random point cloud.
+
+A bias report example using the Titanic dataset is available at `frontend/examples/bias_report.json`, selecting the Age field and feeding it into the Bias Report node.
+
+Select **Random Forest Demo** under Presets to generate random data and labels, train a Random Forest, and visualize feature contributions with the **Explain Model** node.
 
 ## Docker
 
