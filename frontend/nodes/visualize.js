@@ -203,7 +203,7 @@ BarChartNode.prototype.onExecute = function() {
 };
 BarChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const max = Math.max(...this._values) || 1;
@@ -260,7 +260,7 @@ Scatter2DNode.prototype.onExecute = function() {
 };
 Scatter2DNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const xs = this._pts.map(p => p[0]);
@@ -306,7 +306,7 @@ function Scatter3DNode() {
   }, { width: 30 });
   this.onMouseDown = function(e) {
     const header = LiteGraph.NODE_TITLE_HEIGHT;
-    const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const widgets = widgetAreaHeight(this);
     const limit = header + widgets;
     const localX = e.canvasX - this.pos[0];
     const localY = e.canvasY - this.pos[1];
@@ -353,7 +353,7 @@ Scatter3DNode.prototype.onExecute = function() {
 };
 Scatter3DNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   if (!this._glcanvas || this._glcanvas.width !== w || this._glcanvas.height !== h) {
@@ -515,7 +515,7 @@ LineChartNode.prototype.onExecute = function() {
 };
 LineChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const max = Math.max(...this._values);
@@ -583,7 +583,7 @@ HistogramNode.prototype.onExecute = function() {
 HistogramNode.prototype.onDrawBackground = function(ctx) {
   if (!this._values) return;
   const bins = 10;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const min = Math.min(...this._values);
@@ -648,7 +648,7 @@ HeatmapNode.prototype.onDrawBackground = function(ctx) {
   const flat = this._values.flat();
   const min = Math.min(...flat);
   const max = Math.max(...flat);
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const cellW = w / cols;
@@ -741,8 +741,7 @@ ImshowNode.prototype.onExecute = async function() {
 ImshowNode.prototype.onDrawBackground = function(ctx) {
   if (!this._img) return;
   const top =
-    LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
@@ -811,7 +810,7 @@ CorrelationMapNode.prototype.onExecute = function() {
 CorrelationMapNode.prototype.onDrawBackground = function(ctx) {
   if (!this._matrix) return;
   const labels = this._columns;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const labelSize = 40;
@@ -980,7 +979,7 @@ function TableViewNode() {
   this.onMouseDown = function(e) {
     if (!this._tableState) return false;
     const header = LiteGraph.NODE_TITLE_HEIGHT;
-    const widgetsH = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const widgetsH = widgetAreaHeight(this);
     const limit = header + widgetsH;
     const localX = e.canvasX - this.pos[0];
     const localY = e.canvasY - this.pos[1];
@@ -1029,8 +1028,7 @@ TableViewNode.prototype.onExecute = function() {
 };
 TableViewNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
@@ -1058,8 +1056,7 @@ function adjustTableSize() {
   const paginationH = 20;
   const visible = Math.min(rows.length, this.properties.pageSize);
   const tableH = headerH + visible * 16 + paginationH;
-  const top = LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   this.size[1] = top + tableH;
 }
 registerNode('viz/table', TableViewNode);
@@ -1100,8 +1097,7 @@ LissajousNode.prototype.onExecute = function() {
 };
 LissajousNode.prototype.onDrawBackground = function(ctx) {
   if (!this._x || !this._y) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const xs = this._x;
@@ -1163,7 +1159,7 @@ ParallelCoordsNode.prototype.onExecute = function() {
 };
 ParallelCoordsNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data || !this._data.length) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const keys = Object.keys(this._data[0] || {}).filter(k => typeof this._data[0][k] === 'number');
@@ -1260,7 +1256,7 @@ PieChartNode.prototype.onExecute = function() {
 };
 PieChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._entries) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const cx = w / 2;
@@ -1322,7 +1318,7 @@ SankeyNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data) return;
   const nodes = this._data.nodes || [];
   const links = this._data.links || [];
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
@@ -1406,7 +1402,7 @@ ViolinChartNode.prototype.onExecute = function() {
 };
 ViolinChartNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data || !this._data.length) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const values = this._data.map(Number).filter(v => !isNaN(v));
@@ -1484,7 +1480,7 @@ GraphVizNode.prototype.onDrawBackground = function(ctx) {
   if (!this._data) return;
   const nodes = this._data.nodes || [];
   const links = this._data.links || [];
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
@@ -1585,7 +1581,7 @@ GlyphsNode.prototype.onDrawBackground = function(ctx) {
   const mins = this._mins;
   const maxs = this._maxs;
   const dims = mins.length;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
@@ -1675,7 +1671,7 @@ VoronoiNode.prototype.onExecute = function() {
 };
 VoronoiNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const pts = this._pts;
@@ -1811,7 +1807,7 @@ PersistenceDiagramNode.prototype.onExecute = async function() {
 };
 PersistenceDiagramNode.prototype.onDrawBackground = function(ctx) {
   if (!Array.isArray(this._dgms)) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const pts = this._dgms.flat ? this._dgms.flat() : [].concat(...this._dgms);
@@ -1915,7 +1911,7 @@ PersistenceBarcodeNode.prototype.onExecute = async function() {
 };
 PersistenceBarcodeNode.prototype.onDrawBackground = function(ctx) {
   if (!Array.isArray(this._dgms)) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const pts = this._dgms.flat ? this._dgms.flat() : [].concat(...this._dgms);
@@ -2028,7 +2024,7 @@ VietorisRipsNode.prototype.onExecute = function() {
 };
 VietorisRipsNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const pts = this._pts;
@@ -2124,8 +2120,7 @@ UncertaintyNode.prototype.onExecute = async function() {
 UncertaintyNode.prototype.onDrawBackground = function(ctx) {
   if (!this._img) return;
   const top =
-    LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
@@ -2205,8 +2200,7 @@ ContrastFocusNode.prototype.onExecute = function() {
 ContrastFocusNode.prototype.onDrawBackground = function(ctx) {
   if (!this._processed) return;
   const top =
-    LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();

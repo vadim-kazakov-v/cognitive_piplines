@@ -111,7 +111,7 @@ PaletteNode.prototype.onExecute = function() {
 };
 PaletteNode.prototype.onDrawForeground = function(ctx) {
   if (!this._palette) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   const n = this._palette.length;

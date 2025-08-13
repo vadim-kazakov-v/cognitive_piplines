@@ -329,7 +329,7 @@ RandomForestNode.prototype.onDrawBackground = function(ctx) {
     return;
   }
   if (!this._importances || !this._importances.length) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const top = LiteGraph.NODE_TITLE_HEIGHT + widgetAreaHeight(this);
   const w = this.size[0] - 20;
   const h = this.size[1] - top - 20;
   const x0 = 10;
