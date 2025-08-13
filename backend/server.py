@@ -1,5 +1,7 @@
 from pathlib import Path
 from typing import Any, List
+import base64
+import pickle
 
 import numpy as np
 import pandas as pd
@@ -19,6 +21,16 @@ DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "titanic.csv"
 
 df = pd.read_csv(DATA_PATH)
 
+FEATURES = ["Pclass", "Sex", "Age", "SibSp", "Parch", "Fare"]
+_explain_df = df[FEATURES + ["Survived"]].dropna()
+_explain_df["Sex"] = _explain_df["Sex"].map({"male": 0, "female": 1})
+X_explain = _explain_df[FEATURES].values
+y_explain = _explain_df["Survived"].values
+from sklearn.ensemble import RandomForestClassifier
+_EXPLAIN_MODEL = RandomForestClassifier(n_estimators=50, random_state=0).fit(
+    X_explain, y_explain
+)
+
 
 class Matrix(BaseModel):
     """Simple wrapper for a 2D list of floats and optional params."""
@@ -36,6 +48,21 @@ class TableData(BaseModel):
 class CodeRequest(BaseModel):
     code: str
     data: Any | None = None
+
+
+class ExplainRequest(BaseModel):
+    model: str | None = None
+    data: List[List[float]]
+
+
+class RFTrainRequest(BaseModel):
+    data: List[List[float]]
+    target: List[float]
+
+
+class RFPredictRequest(BaseModel):
+    model: str
+    data: List[List[float]]
 
 
 @app.get("/health")
@@ -62,6 +89,81 @@ def describe_table(req: TableData) -> dict:
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return frame.describe(include="all").replace({np.nan: None}).to_dict()
+
+
+@app.post("/rf_train")
+def rf_train(req: RFTrainRequest) -> dict:
+    """Train a RandomForest model and return it serialized."""
+    from sklearn.ensemble import RandomForestClassifier
+
+    try:
+        data = np.asarray(req.data, dtype=float)
+        target = np.asarray(req.target, dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    model = RandomForestClassifier(n_estimators=100, random_state=0).fit(
+        data, target
+    )
+    model_bytes = pickle.dumps(model)
+    model_str = base64.b64encode(model_bytes).decode("ascii")
+    return {"model": model_str}
+
+
+@app.post("/rf_predict")
+def rf_predict(req: RFPredictRequest) -> list[float]:
+    """Run predictions using a serialized RandomForest model."""
+    try:
+        model_bytes = base64.b64decode(req.model.encode("ascii"))
+        model = pickle.loads(model_bytes)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    try:
+        data = np.asarray(req.data, dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    preds = model.predict(data)
+    return preds.tolist()
+
+
+@app.post("/explain")
+def explain(req: ExplainRequest) -> list[dict]:
+    """Return feature contributions for a model."""
+    try:
+        import shap
+    except Exception as exc:  # pragma: no cover - shap missing
+        raise HTTPException(status_code=500, detail=str(exc))
+    try:
+        data = np.asarray(req.data, dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if data.ndim == 1:
+        data = data.reshape(1, -1)
+    model = _EXPLAIN_MODEL
+    feature_names = FEATURES
+    if req.model:
+        try:
+            model_bytes = base64.b64decode(req.model.encode("ascii"))
+            model = pickle.loads(model_bytes)
+            feature_names = [f"f{i}" for i in range(data.shape[1])]
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+    if data.shape[1] != len(feature_names):
+        raise HTTPException(status_code=400, detail="Invalid feature count")
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(data)
+    if isinstance(shap_values, list):
+        shap_values = shap_values[1]
+    elif getattr(shap_values, "ndim", 0) == 3:
+        shap_values = shap_values[..., 1]
+    result = []
+    for row in shap_values:
+        result.append(
+            [
+                {"feature": f, "contribution": float(v)}
+                for f, v in zip(feature_names, row)
+            ]
+        )
+    return result[0] if len(result) == 1 else result
 
 
 @app.post("/tsne")
