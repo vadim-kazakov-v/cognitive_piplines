@@ -27,6 +27,7 @@ Additional endpoints provide machine learning helpers used by the UI:
 - `/pca` – dimensionality reduction via PCA
 - `/isolation_forest` – anomaly detection with Isolation Forest
 - `/lof` – anomaly detection with Local Outlier Factor
+- `/hyperdr` – hybrid dimensionality reduction via autoencoder or SOM
 
 ## Frontend
 
@@ -45,7 +46,7 @@ With the backend running, open `frontend/index.html` in a web browser. Use the s
 - **Voronoi Diagram** – display Voronoi cells for point sets with selectable X/Y columns and optional color interpolation
 - **Contrast Focus** – dim unselected areas of an image while keeping a chosen rectangle fully visible; opacity is adjustable
 - **Persistence Diagram**, **Persistence Barcode**, and **Vietoris-Rips** – topological data analysis visuals for point clouds
-- **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, and **KMeans** – run analytics algorithms on arrays of numbers
+- **t‑SNE**, **UMAP**, **PCA**, **DBSCAN**, **KMeans**, and **HyperDR** – run analytics algorithms on arrays of numbers
 - **Spectral**, **GMM** – additional clustering tools
 - **Isolation Forest**, **Local Outlier Factor** – anomaly detection
 - **Random Series**, **Sine Wave** – generate time-series data

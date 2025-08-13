@@ -221,7 +221,24 @@ function LofNode() {
 LofNode.title = 'Local Outlier Factor';
 LofNode.icon = '🚨';
 LofNode.prototype = Object.create(ApiNode.prototype);
-registerNode('ml/lof', LofNode);
+  registerNode('ml/lof', LofNode);
+
+
+function HyperdrNode() {
+  ApiNode.call(this, 'hyperdr', 'HyperDR', {
+    method: {
+      value: 'autoencoder',
+      type: 'combo',
+      values: ['autoencoder', 'som'],
+    },
+    latent_dim: { value: 2, min: 1, max: 10, step: 1 },
+    grid_size: { value: 10, min: 2, max: 50, step: 1 },
+  });
+}
+HyperdrNode.title = 'HyperDR';
+HyperdrNode.icon = '✨';
+HyperdrNode.prototype = Object.create(ApiNode.prototype);
+registerNode('ml/hyperdr', HyperdrNode);
 
 function _rfPrepareData(data) {
   if (Array.isArray(data) && data.length) {
