@@ -76,17 +76,28 @@ VisualizerNode.title = 'Visualizer';
 VisualizerNode.icon = '\uD83D\uDDBC\uFE0F';
 VisualizerNode.prototype.onExecute = function() {
   const data = this.getInputData(0);
-  if (!data) return;
+  if (typeof data !== 'string' || !data) {
+    this._current = null;
+    this._img = null;
+    return;
+  }
   if (data !== this._current) {
     this._current = data;
     this._img = new Image();
     this._img.onload = () => this.setDirtyCanvas(true, true);
+    this._img.onerror = () => {
+      this._img = null;
+      this._current = null;
+      this.setDirtyCanvas(true, true);
+    };
     this._img.src = data;
   }
 };
 VisualizerNode.prototype.onDrawBackground = function(ctx) {
-  if (!this._img) return;
-  const top = LiteGraph.NODE_TITLE_HEIGHT + LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  if (!this._img || !this._img.complete || !this._img.naturalWidth) return;
+  const top =
+    LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
