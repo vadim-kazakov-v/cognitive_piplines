@@ -379,6 +379,7 @@ const BIAS_REPORT_FLOW = {
   "version": 0.4
 };
 
+
 const RANDOM_FOREST_FLOW = {
   "last_node_id": 6,
   "last_link_id": 7,
@@ -669,3 +670,71 @@ const RANDOM_FOREST_FLOW = {
   "extra": {},
   "version": 0.4
 };
+
+
+
+
+const UNCERTAINTY_FLOW = {
+  "last_node_id": 3,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "data/random_series",
+      "pos": [50, 150],
+      "size": [210, 58],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        { "name": "series", "type": "array", "links": [1] }
+      ],
+      "properties": { "length": 100, "scale": 1 },
+      "color": "#222",
+      "bgcolor": "#444"
+    },
+    {
+      "id": 2,
+      "type": "viz/uncertainty",
+      "pos": [260, 150],
+      "size": [200, 150],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "data", "type": "array", "link": 1 }
+      ],
+      "outputs": [
+        { "name": "image", "type": "string", "links": [2] }
+      ],
+      "properties": {},
+      "color": "#222",
+      "bgcolor": "#444"
+    },
+    {
+      "id": 3,
+      "type": "viz/view",
+      "pos": [470, 150],
+      "size": [200, 150],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        { "name": "image", "type": "string", "link": 2 }
+      ],
+      "properties": {},
+      "color": "#222",
+      "bgcolor": "#444"
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "array"],
+    [2, 2, 0, 3, 0, "string"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+};
+

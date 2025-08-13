@@ -2102,6 +2102,7 @@ UncertaintyNode.prototype.onExecute = async function() {
         this._img = new Image();
         this._img.onload = () => this.setDirtyCanvas(true, true);
         this._img.src = img;
+        this.setDirtyCanvas(true, true);
       }
     } catch (err) {
       console.error(err);
@@ -2116,6 +2117,7 @@ UncertaintyNode.prototype.onExecute = async function() {
       this._img = new Image();
       this._img.onload = () => this.setDirtyCanvas(true, true);
       this._img.src = img;
+      this.setDirtyCanvas(true, true);
     }
   }
 };
