@@ -38,6 +38,14 @@ class CodeRequest(BaseModel):
     data: Any | None = None
 
 
+class ImshowRequest(BaseModel):
+    data: List[List[float]]
+    cmap: str = "viridis"
+    interpolation: str = "nearest"
+    vmin: float | None = None
+    vmax: float | None = None
+
+
 @app.get("/health")
 def health() -> dict:
     """Simple health check endpoint."""
@@ -341,6 +349,34 @@ def vietoris_rips(matrix: Matrix) -> list[list[int]]:
             if dists[i, j] <= epsilon:
                 edges.append([i, j])
     return edges
+
+
+@app.post("/imshow")
+def imshow(req: ImshowRequest) -> str:
+    """Render an array as an image using Matplotlib."""
+
+    import base64
+    import io
+    import matplotlib.pyplot as plt
+
+    try:
+        data = np.asarray(req.data, dtype=float)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    fig, ax = plt.subplots()
+    ax.imshow(
+        data,
+        cmap=req.cmap,
+        interpolation=req.interpolation,
+        vmin=req.vmin,
+        vmax=req.vmax,
+    )
+    ax.axis("off")
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png", bbox_inches="tight", pad_inches=0)
+    plt.close(fig)
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
 
 
 @app.post("/python")
