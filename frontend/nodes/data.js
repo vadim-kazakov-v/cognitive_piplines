@@ -28,6 +28,75 @@ TitanicNode.prototype.onExecute = async function() {
 };
 registerNode('data/titanic', TitanicNode);
 
+function CsvNode() {
+  this.addOutput('data', 'array');
+  this.addProperty('url', '');
+  this.addProperty('separator', ',');
+  this.addProperty('header', true);
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('text', 'url', this.properties.url, v => (this.properties.url = v));
+  this.addWidget('button', 'load url', null, () => this.loadFromUrl());
+  this.addWidget('button', 'file', null, () => this.loadFromFile());
+}
+CsvNode.title = 'CSV';
+CsvNode.icon = '📄';
+CsvNode.prototype.parse = function(text) {
+  const sep = this.properties.separator || ',';
+  const lines = text.trim().split(/\r?\n/);
+  if (!lines.length) return [];
+  let headers = [];
+  let start = 0;
+  if (this.properties.header) {
+    headers = lines[0].split(sep);
+    start = 1;
+  } else {
+    headers = lines[0].split(sep).map((_, i) => `col${i + 1}`);
+  }
+  const rows = [];
+  for (let i = start; i < lines.length; i++) {
+    const parts = lines[i].split(sep);
+    const obj = {};
+    headers.forEach((h, j) => {
+      const val = parts[j];
+      const num = Number(val);
+      obj[h] = isNaN(num) ? val : num;
+    });
+    rows.push(obj);
+  }
+  return rows;
+};
+CsvNode.prototype.loadFromUrl = async function() {
+  const url = this.properties.url;
+  if (!url) return;
+  try {
+    const res = await fetch(url);
+    const text = await res.text();
+    this._data = this.parse(text);
+    this.setOutputData(0, this._data);
+  } catch (err) {
+    console.error(err);
+  }
+};
+CsvNode.prototype.loadFromFile = function() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv,text/csv';
+  input.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    file.text().then(txt => {
+      this._data = this.parse(txt);
+      this.setOutputData(0, this._data);
+    });
+  });
+  input.click();
+};
+CsvNode.prototype.onExecute = function() {
+  if (this._data) this.setOutputData(0, this._data);
+};
+registerNode('data/csv', CsvNode);
+
 function RandomDataNode() {
   this.addOutput('data', 'array');
   this.addProperty('count', 10);
