@@ -38,6 +38,32 @@ class CodeRequest(BaseModel):
     data: Any | None = None
 
 
+def autoencoderProjection(data: np.ndarray, latent_dim: int) -> np.ndarray:
+    """Project data into a latent space using a simple autoencoder."""
+    from sklearn.neural_network import MLPRegressor
+
+    model = MLPRegressor(
+        hidden_layer_sizes=(latent_dim,),
+        activation="relu",
+        max_iter=500,
+    )
+    model.fit(data, data)
+    W1, b1 = model.coefs_[0], model.intercepts_[0]
+    hidden = np.dot(data, W1) + b1
+    hidden = np.maximum(0, hidden)
+    return hidden
+
+
+def somProjection(data: np.ndarray, grid_size: int) -> list[list[int]]:
+    """Project data using a self-organizing map and return winning neuron coords."""
+    from minisom import MiniSom
+
+    som = MiniSom(grid_size, grid_size, data.shape[1], sigma=1.0, learning_rate=0.5)
+    som.random_weights_init(data)
+    som.train_random(data, 100)
+    return [list(som.winner(x)) for x in data]
+
+
 @app.get("/health")
 def health() -> dict:
     """Simple health check endpoint."""
@@ -283,6 +309,29 @@ def pca(matrix: Matrix) -> list[list[float]]:
     params["n_components"] = n_components
     embedding = PCA(**params).fit_transform(data)
     return embedding.tolist()
+
+
+@app.post("/hyperdr")
+def hyperdr(matrix: Matrix) -> list[list[float]]:
+    """Hybrid dimensionality reduction via autoencoder or SOM."""
+
+    params = matrix.params or {}
+    try:
+        data = np.asarray(matrix.data, dtype=float)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    method = params.get("method", "autoencoder")
+    if method == "autoencoder":
+        latent = int(params.get("latent_dim", 2))
+        result = autoencoderProjection(data, latent)
+    elif method == "som":
+        grid = int(params.get("grid_size", 10))
+        result = np.asarray(somProjection(data, grid), dtype=float)
+    else:
+        raise HTTPException(status_code=400, detail="Unknown method")
+
+    return result.tolist()
 
 
 @app.post("/persistence")
