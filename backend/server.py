@@ -160,7 +160,10 @@ def rf_train(req: RFTrainRequest) -> dict:
     )
     model_bytes = pickle.dumps(model)
     model_str = base64.b64encode(model_bytes).decode("ascii")
-    return {"model": model_str}
+    return {
+        "model": model_str,
+        "importance": model.feature_importances_.tolist(),
+    }
 
 
 @app.post("/rf_predict")
