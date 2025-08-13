@@ -22,6 +22,24 @@ function captureNodeImage(node, drawFunc) {
   return canvas.toDataURL();
 }
 
+function addSaveImageMenu(node, filename, captureFn) {
+  node.getExtraMenuOptions = function() {
+    return [
+      {
+        content: '💾 Save Image',
+        callback: () => {
+          const data = captureFn();
+          if (!data) return;
+          const a = document.createElement('a');
+          a.href = data;
+          a.download = filename;
+          a.click();
+        }
+      }
+    ];
+  };
+}
+
 const COLOR_PALETTE = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999'];
 
 function labelColor(v) {
@@ -168,17 +186,11 @@ function BarChartNode() {
   this.bgcolor = '#444';
   setupFieldSelector(this);
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    BarChartNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'barchart.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'barchart.png',
+    () => captureNodeImage(this, BarChartNode.prototype.onDrawBackground)
+  );
 }
 BarChartNode.title = 'Bar Chart';
 BarChartNode.icon = '📊';
@@ -234,17 +246,11 @@ function Scatter2DNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    Scatter2DNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'scatter.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'scatter.png',
+    () => captureNodeImage(this, Scatter2DNode.prototype.onDrawBackground)
+  );
 }
 Scatter2DNode.title = 'Scatter2D';
 Scatter2DNode.icon = '📈';
@@ -297,13 +303,11 @@ function Scatter3DNode() {
   this.bgcolor = '#444';
   this._rot = [0, 0];
   this._zoom = 1;
-  this.addWidget('button', '💾', null, () => {
-    if (!this._glcanvas) return;
-    const a = document.createElement('a');
-    a.href = this._glcanvas.toDataURL();
-    a.download = 'scatter3d.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'scatter3d.png',
+    () => (this._glcanvas ? this._glcanvas.toDataURL() : null)
+  );
   this.onMouseDown = function(e) {
     const header = LiteGraph.NODE_TITLE_HEIGHT;
     const widgets = widgetAreaHeight(this);
@@ -480,17 +484,11 @@ function LineChartNode() {
   this.bgcolor = '#444';
   setupFieldSelector(this);
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    LineChartNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'linechart.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'linechart.png',
+    () => captureNodeImage(this, LineChartNode.prototype.onDrawBackground)
+  );
 }
 LineChartNode.title = 'Line Chart';
 LineChartNode.icon = '📉';
@@ -547,17 +545,11 @@ function HistogramNode() {
   this.bgcolor = '#444';
   setupFieldSelector(this);
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    HistogramNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'histogram.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'histogram.png',
+    () => captureNodeImage(this, HistogramNode.prototype.onDrawBackground)
+  );
 }
 HistogramNode.title = 'Histogram';
 HistogramNode.icon = '📚';
@@ -618,17 +610,11 @@ function HeatmapNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    HeatmapNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'heatmap.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'heatmap.png',
+    () => captureNodeImage(this, HeatmapNode.prototype.onDrawBackground)
+  );
 }
 HeatmapNode.title = 'Heatmap';
 HeatmapNode.icon = '🌡️';
@@ -702,6 +688,11 @@ function ImshowNode() {
   this.addWidget('text', 'vmax', this.properties.vmax, v => (this.properties.vmax = v), {
     property: 'vmax',
   });
+  addSaveImageMenu(
+    this,
+    'imshow.png',
+    () => captureNodeImage(this, ImshowNode.prototype.onDrawBackground)
+  );
 }
 ImshowNode.title = 'ImShow';
 ImshowNode.icon = '🖼️';
@@ -761,17 +752,11 @@ function CorrelationMapNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    CorrelationMapNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'corrmap.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'corrmap.png',
+    () => captureNodeImage(this, CorrelationMapNode.prototype.onDrawBackground)
+  );
 }
 CorrelationMapNode.title = 'Correlation Map';
 CorrelationMapNode.icon = '🔗';
@@ -1014,6 +999,11 @@ function TableViewNode() {
     }
     return false;
   };
+  addSaveImageMenu(
+    this,
+    'table.png',
+    () => captureNodeImage(this, TableViewNode.prototype.onDrawBackground)
+  );
 }
 TableViewNode.title = 'Table';
 TableViewNode.icon = '📋';
@@ -1071,17 +1061,11 @@ function LissajousNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    LissajousNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'lissajous.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'lissajous.png',
+    () => captureNodeImage(this, LissajousNode.prototype.onDrawBackground)
+  );
 }
 LissajousNode.title = 'Lissajous';
 LissajousNode.icon = '∞';
@@ -1134,17 +1118,11 @@ function ParallelCoordsNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    ParallelCoordsNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'parallel.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'parallel.png',
+    () => captureNodeImage(this, ParallelCoordsNode.prototype.onDrawBackground)
+  );
 }
 ParallelCoordsNode.title = 'Parallel Coords';
 ParallelCoordsNode.icon = '🕸️';
@@ -1221,17 +1199,11 @@ function PieChartNode() {
   this.bgcolor = '#444';
   setupLabelValueSelectors(this);
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    PieChartNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'piechart.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'piechart.png',
+    () => captureNodeImage(this, PieChartNode.prototype.onDrawBackground)
+  );
 }
 PieChartNode.title = 'Pie Chart';
 PieChartNode.icon = '🥧';
@@ -1292,17 +1264,11 @@ function SankeyNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    SankeyNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'sankey.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'sankey.png',
+    () => captureNodeImage(this, SankeyNode.prototype.onDrawBackground)
+  );
 }
 SankeyNode.title = 'Sankey';
 SankeyNode.icon = '🔀';
@@ -1378,17 +1344,11 @@ function ViolinChartNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    ViolinChartNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'violin.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'violin.png',
+    () => captureNodeImage(this, ViolinChartNode.prototype.onDrawBackground)
+  );
 }
 ViolinChartNode.title = 'Violin';
 ViolinChartNode.icon = '🎻';
@@ -1454,17 +1414,11 @@ function GraphVizNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    GraphVizNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'graph.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'graph.png',
+    () => captureNodeImage(this, GraphVizNode.prototype.onDrawBackground)
+  );
 }
 GraphVizNode.title = 'Graph';
 GraphVizNode.icon = '🕸️';
@@ -1529,17 +1483,11 @@ function GlyphsNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
-  this.addWidget('button', '💾', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    GlyphsNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'glyphs.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'glyphs.png',
+    () => captureNodeImage(this, GlyphsNode.prototype.onDrawBackground)
+  );
 }
 GlyphsNode.title = 'Glyphs';
 GlyphsNode.icon = '⭐';
@@ -1637,17 +1585,11 @@ function VoronoiNode() {
     v => (this.properties.interpolation = v),
     { values: ['nearest', 'linear'], property: 'interpolation' }
   );
-  this.addWidget('button', '\uD83D\uDCBE', null, () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = this.size[0];
-    canvas.height = this.size[1];
-    const ctx = canvas.getContext('2d');
-    VoronoiNode.prototype.onDrawBackground.call(this, ctx);
-    const a = document.createElement('a');
-    a.href = canvas.toDataURL();
-    a.download = 'voronoi.png';
-    a.click();
-  }, { width: 30 });
+  addSaveImageMenu(
+    this,
+    'voronoi.png',
+    () => captureNodeImage(this, VoronoiNode.prototype.onDrawBackground)
+  );
 }
 VoronoiNode.title = 'Voronoi';
 VoronoiNode.icon = '\uD83D\uDCCD';
@@ -1762,6 +1704,11 @@ function PersistenceDiagramNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
+  addSaveImageMenu(
+    this,
+    'persistence.png',
+    () => captureNodeImage(this, PersistenceDiagramNode.prototype.onDrawBackground)
+  );
 }
 PersistenceDiagramNode.title = 'Persistence Diagram';
 PersistenceDiagramNode.icon = '\u26F0\uFE0F';
@@ -1866,6 +1813,11 @@ function PersistenceBarcodeNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
+  addSaveImageMenu(
+    this,
+    'barcode.png',
+    () => captureNodeImage(this, PersistenceBarcodeNode.prototype.onDrawBackground)
+  );
 }
 PersistenceBarcodeNode.title = 'Persistence Barcode';
 PersistenceBarcodeNode.icon = '\uD83D\uDCCB';
@@ -1998,6 +1950,11 @@ function VietorisRipsNode() {
     },
     { min: 0.1, max: 5, step: 0.1 }
   );
+  addSaveImageMenu(
+    this,
+    'vietoris.png',
+    () => captureNodeImage(this, VietorisRipsNode.prototype.onDrawBackground)
+  );
 }
 VietorisRipsNode.title = 'Vietoris-Rips';
 VietorisRipsNode.icon = '\uD83D\uDD77\uFE0F';
@@ -2075,6 +2032,11 @@ function UncertaintyNode() {
   this.color = '#222';
   this.bgcolor = '#444';
   enableInteraction(this);
+  addSaveImageMenu(
+    this,
+    'uncertainty.png',
+    () => captureNodeImage(this, UncertaintyNode.prototype.onDrawBackground)
+  );
 }
 UncertaintyNode.title = 'Uncertainty';
 UncertaintyNode.icon = '❓';
@@ -2148,6 +2110,11 @@ function ContrastFocusNode() {
     max: 1,
     step: 0.05,
   });
+  addSaveImageMenu(
+    this,
+    'contrast.png',
+    () => captureNodeImage(this, ContrastFocusNode.prototype.onDrawBackground)
+  );
 }
 ContrastFocusNode.title = 'Contrast Focus';
 ContrastFocusNode.icon = '🌗';

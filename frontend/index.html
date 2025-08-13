@@ -708,17 +708,13 @@ result = {
       mask.properties.code = "[30, 30, 40, 40]";
       const focus = LiteGraph.createNode('viz/contrast_focus');
       focus.pos = [450, 150];
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [650, 150];
       graph.add(py);
       graph.add(im);
       graph.add(mask);
       graph.add(focus);
-      graph.add(view);
       py.connect(0, im, 0);
       im.connect(0, focus, 0);
       mask.connect(0, focus, 1);
-      focus.connect(0, view, 0);
     }
 
     function presetImShow() {
@@ -729,8 +725,6 @@ result = {
       im.pos = [250, 150];
       im.properties.cmap = 'viridis';
       im.properties.interpolation = 'bilinear';
-      const view = LiteGraph.createNode('viz/view');
-      view.pos = [450, 150];
       graph.add(py);
       graph.add(im);
       py.connect(0, im, 0);
