@@ -639,19 +639,11 @@ result = {
     }
 
     function presetTDA() {
-      return fetch('/examples/tda.json')
-        .then(r => r.json())
-        .then(data => {
-          graph.configure(data);
-        });
+      graph.configure(JSON.parse(JSON.stringify(TDA_FLOW)));
     }
 
     function presetBiasReport() {
-      return fetch('/examples/bias_report.json')
-        .then(r => r.json())
-        .then(data => {
-          graph.configure(data);
-        });
+      graph.configure(JSON.parse(JSON.stringify(BIAS_REPORT_FLOW)));
     }
 
     function presetPaletteDemo() {
@@ -700,7 +692,7 @@ result = {
       { name: 'Voronoi', fn: presetVoronoi },
       { name: 'Bias Report', fn: presetBiasReport },
       { name: 'TDA Demo', fn: presetTDA },
-      { name: 'Uncertainty Demo', fn: presetUncertainty }
+      { name: 'Uncertainty Demo', fn: presetUncertainty },
       { name: 'Palette Demo', fn: presetPaletteDemo }
     ];
 
@@ -720,6 +712,7 @@ result = {
       presetList.appendChild(btn);
     });
   </script>
+  <script src="examples/flows.js"></script>
   <script src="nodes/data.js"></script>
   <script src="nodes/transform.js"></script>
   <script src="nodes/visualize.js"></script>
