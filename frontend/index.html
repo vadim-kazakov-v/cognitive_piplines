@@ -100,6 +100,38 @@
       display: flex;
       gap: 4px;
     }
+    #copilot {
+      width: 300px;
+      padding: 10px;
+      box-sizing: border-box;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      border-left: 1px solid #444;
+      overflow-y: auto;
+    }
+    #copilot textarea {
+      background: #444;
+      border: 1px solid #666;
+      color: #fff;
+      padding: 6px 8px;
+    }
+    #copilot button {
+      background: #444;
+      border: 1px solid #666;
+      color: #fff;
+      padding: 6px 8px;
+      cursor: pointer;
+      text-align: left;
+    }
+    #copilot button:hover {
+      background: #555;
+    }
+    #copilot-show {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
   </style>
 </head>
 <body>
@@ -115,6 +147,7 @@
     </select>
     <button id="layout-btn">Auto Layout</button>
     <button id="feedback-btn">Feedback</button>
+    <button id="config-btn">Config</button>
     <h3>Presets</h3>
     <div id="preset-list"></div>
     <input id="file-input" type="file" accept="application/json" style="display:none" />
@@ -123,6 +156,36 @@
   </div>
   <div id="main" class="glass">
     <canvas id="graph"></canvas>
+  </div>
+  <div id="copilot" class="glass">
+    <button id="copilot-hide">Hide</button>
+    <select id="copilot-mode">
+      <option value="qna">QnA</option>
+      <option value="generate">Flow Generation</option>
+      <option value="modify">Flow Modification</option>
+    </select>
+    <textarea id="copilot-qna" rows="5" placeholder="Ask a question or describe flow changes..."></textarea>
+    <button id="copilot-send">Send</button>
+    <div id="copilot-output" style="flex:1; overflow:auto"></div>
+  </div>
+  <button id="copilot-show">Copilot</button>
+  <div id="config-modal" class="modal">
+    <div class="modal-content">
+      <h2 style="margin-top:0;margin-bottom:10px;text-align:center;">Global Configuration</h2>
+      <label style="display:block;margin-bottom:8px;">GigaChat Token
+        <input id="gigachat-token" type="text" style="width:100%" />
+      </label>
+      <label style="display:block;margin-bottom:8px;">Model Name
+        <input id="model-name" type="text" style="width:100%" value="GigaChat-2-Max" />
+      </label>
+      <label style="display:block;margin-bottom:8px;">System Prompt
+        <textarea id="system-prompt" rows="3" style="width:100%"></textarea>
+      </label>
+      <div style="margin-top:8px; display:flex; gap:6px; justify-content:flex-end;">
+        <button id="save-config">Save</button>
+        <button id="close-config">Close</button>
+      </div>
+    </div>
   </div>
   <div id="feedback-modal" class="modal">
     <div class="modal-content">
@@ -826,6 +889,8 @@ result = {
   <script src="nodes/bias.js"></script>
   <script src="nodes/ml.js"></script>
   <script src="nodes/python.js"></script>
+  <script src="config.js"></script>
+  <script src="copilot.js"></script>
   <script>presetSimpleUMAP(); autoLayout(); graph.start();</script>
 </body>
 </html>

@@ -5,6 +5,8 @@ import os
 from dotenv import load_dotenv
 import base64
 import pickle
+import json
+import requests
 
 import math
 import numpy as np
@@ -115,6 +117,32 @@ class RFPredictRequest(BaseModel):
     model: str
     data: List[List[float]]
 
+
+class CopilotRequest(BaseModel):
+    question: str
+    model: str
+    token: str
+    flow: Any | None = None
+    images: List[str] | None = None
+    system_prompt: str | None = None
+    mode: str = "qna"
+
+
+DEFAULT_COPILOT_PROMPTS: dict[str, str] = {
+    "qna": (
+        "You are a helpful assistant that answers questions about the user's"
+        " cognitive flow. Use the provided flow JSON and node images to inform"
+        " your answers."
+    ),
+    "generate": (
+        "You create new cognitive flows from scratch. Given a user request,"
+        " respond with only JSON describing a valid flow for the application."
+    ),
+    "modify": (
+        "You edit an existing cognitive flow. Using the provided flow JSON and"
+        " the user's instructions, return only JSON for the updated flow."
+    ),
+}
 
 class Series(BaseModel):
     """Wrapper for a list of numeric values."""
@@ -786,6 +814,47 @@ def suggest_palette(params: PaletteParams) -> list[str]:
         lab = lch_to_lab(params.lightness, params.chroma, h)
         colors.append(rgb_to_hex(lab_to_rgb(*lab)))
     return colors
+
+
+@app.post("/copilot")
+def copilot_endpoint(req: CopilotRequest) -> dict:
+    """Forward question and context to the GigaChat API."""
+    url = os.environ.get(
+        "GIGACHAT_API_URL",
+        "https://gigachat.openapi.ai/v1/chat/completions",
+    )
+    headers = {
+        "Authorization": f"Bearer {req.token}",
+        "Content-Type": "application/json",
+    }
+    messages: list[dict[str, str]] = []
+    system_prompt = req.system_prompt or DEFAULT_COPILOT_PROMPTS.get(req.mode)
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": req.question})
+    context: dict[str, Any] = {"mode": req.mode}
+    if req.flow is not None:
+        context["flow"] = req.flow
+    if req.images:
+        context["images"] = req.images
+    messages.append({"role": "user", "content": json.dumps(context)})
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            json={"model": req.model, "messages": messages},
+            timeout=60,
+        )
+        response.raise_for_status()
+        data = response.json()
+        answer = (
+            data.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "")
+        )
+        return {"answer": answer, "raw": data}
+    except Exception as exc:  # pragma: no cover - network failure or API error
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.post("/palette")
