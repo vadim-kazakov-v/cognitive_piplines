@@ -6,3 +6,4 @@ umap-learn
 ripser
 matplotlib
 minisom
+shap
