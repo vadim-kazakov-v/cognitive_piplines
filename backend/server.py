@@ -39,6 +39,33 @@ class CodeRequest(BaseModel):
     data: Any | None = None
 
 
+def detectAnchoring(values: np.ndarray) -> float:
+    """Simple anchoring bias score based on distance of first item from the rest."""
+    if values.size < 2:
+        return 0.0
+    rest = values[1:]
+    mean_rest = rest.mean()
+    std_rest = rest.std() or 1.0
+    return float(abs(values[0] - mean_rest) / std_rest)
+
+
+def estimateVisualClutter(values: np.ndarray) -> float:
+    """Rough estimate of visual clutter based on unique value ratio."""
+    if values.size == 0:
+        return 0.0
+    unique = np.unique(values).size
+    return float(unique / values.size)
+
+
+def checkScaleBias(values: np.ndarray) -> float:
+    """Detect potential scale bias via max/min ratio."""
+    if values.size == 0:
+        return 0.0
+    min_val = values.min()
+    max_val = values.max()
+    if min_val == 0:
+        return float('inf') if max_val != 0 else 0.0
+    return float(max_val / min_val)
 
       
 class PaletteParams(BaseModel):
@@ -82,6 +109,32 @@ def describe_table(req: TableData) -> dict:
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     return frame.describe(include="all").replace({np.nan: None}).to_dict()
+
+
+@app.post("/bias-report")
+def bias_report(req: TableData) -> dict:
+    """Return simple bias metrics for a sequence of numeric values."""
+    try:
+        values = np.asarray(req.data, dtype=float).flatten()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    anchoring_score = detectAnchoring(values)
+    clutter_score = estimateVisualClutter(values)
+    scale_score = checkScaleBias(values)
+    return {
+        "anchoring": {
+            "score": anchoring_score,
+            "message": "⚠️ anchoring" if anchoring_score > 1 else "✅ ok",
+        },
+        "clutter": {
+            "score": clutter_score,
+            "message": "⚠️ clutter" if clutter_score > 0.7 else "✅ ok",
+        },
+        "scale": {
+            "score": scale_score,
+            "message": "⚠️ scale" if scale_score > 100 else "✅ ok",
+        },
+    }
 
 
 @app.post("/tsne")
