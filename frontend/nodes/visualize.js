@@ -226,6 +226,8 @@ function Scatter2DNode() {
   this.addInput('points', 'array');
   this.addInput('color', 'array');
   this.addInput('size', 'array');
+  this.addInput('zoom', LiteGraph.ACTION);
+  this.addInput('move', LiteGraph.ACTION);
   this.addOutput('image', 'string');
   this.size = [200, 150];
   this.resizable = true;
@@ -257,6 +259,22 @@ Scatter2DNode.prototype.onExecute = function() {
   this.setDirtyCanvas(true, true);
   const img = captureNodeImage(this, Scatter2DNode.prototype.onDrawBackground);
   this.setOutputData(0, img);
+};
+Scatter2DNode.prototype.onAction = function(action, param) {
+  if (action === 'zoom') {
+    const factor = typeof param === 'number' ? param : 1;
+    this._zoom *= factor;
+  } else if (action === 'move') {
+    if (Array.isArray(param)) {
+      this._offset[0] += Number(param[0]) || 0;
+      this._offset[1] += Number(param[1]) || 0;
+    }
+  }
+  if (this._pts) {
+    const img = captureNodeImage(this, Scatter2DNode.prototype.onDrawBackground);
+    this.setOutputData(0, img);
+  }
+  this.setDirtyCanvas(true, true);
 };
 Scatter2DNode.prototype.onDrawBackground = function(ctx) {
   if (!this._pts) return;
