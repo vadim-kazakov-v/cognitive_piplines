@@ -1624,6 +1624,7 @@ function VoronoiNode() {
   this.addOutput('image', 'string');
   this.addProperty('x', 'col1');
   this.addProperty('y', 'col2');
+  this.addProperty('interpolation', 'nearest');
   this.size = [200, 150];
   this.resizable = true;
   this._zoom = 1;
@@ -1633,6 +1634,13 @@ function VoronoiNode() {
   enableInteraction(this);
   this.addWidget('text', 'x', this.properties.x, v => (this.properties.x = v));
   this.addWidget('text', 'y', this.properties.y, v => (this.properties.y = v));
+  this.addWidget(
+    'combo',
+    'interp',
+    this.properties.interpolation,
+    v => (this.properties.interpolation = v),
+    { values: ['nearest', 'linear'], property: 'interpolation' }
+  );
   this.addWidget('button', '\uD83D\uDCBE', null, () => {
     const canvas = document.createElement('canvas');
     canvas.width = this.size[0];
@@ -1690,20 +1698,45 @@ VoronoiNode.prototype.onDrawBackground = function(ctx) {
     const py = minY + ((h - y) / h) * ((maxY - minY) || 1);
     for (let x = 0; x < w; x++) {
       const px = minX + (x / w) * ((maxX - minX) || 1);
-      let best = 0;
-      let bestDist = Infinity;
-      for (let i = 0; i < pts.length; i++) {
-        const dx = px - pts[i][0];
-        const dy = py - pts[i][1];
-        const d = dx * dx + dy * dy;
-        if (d < bestDist) { bestDist = d; best = i; }
-      }
-      const rgb = hexToRgb(labelColor(this._colors && this._colors[best]));
       const idx = (y * w + x) * 4;
-      data[idx] = rgb[0];
-      data[idx + 1] = rgb[1];
-      data[idx + 2] = rgb[2];
-      data[idx + 3] = 255;
+      if (this.properties.interpolation === 'nearest') {
+        let best = 0;
+        let bestDist = Infinity;
+        for (let i = 0; i < pts.length; i++) {
+          const dx = px - pts[i][0];
+          const dy = py - pts[i][1];
+          const d = dx * dx + dy * dy;
+          if (d < bestDist) { bestDist = d; best = i; }
+        }
+        const rgb = hexToRgb(labelColor(this._colors && this._colors[best]));
+        data[idx] = rgb[0];
+        data[idx + 1] = rgb[1];
+        data[idx + 2] = rgb[2];
+        data[idx + 3] = 255;
+      } else {
+        const weights = [];
+        for (let i = 0; i < pts.length; i++) {
+          const dx = px - pts[i][0];
+          const dy = py - pts[i][1];
+          const d = dx * dx + dy * dy || 1e-6;
+          weights.push({ i, w: 1 / d });
+        }
+        weights.sort((a, b) => b.w - a.w);
+        const k = Math.min(3, weights.length);
+        let r = 0, g = 0, b = 0, sum = 0;
+        for (let j = 0; j < k; j++) {
+          const rgb = hexToRgb(labelColor(this._colors && this._colors[weights[j].i]));
+          const wj = weights[j].w;
+          r += rgb[0] * wj;
+          g += rgb[1] * wj;
+          b += rgb[2] * wj;
+          sum += wj;
+        }
+        data[idx] = Math.round(r / sum);
+        data[idx + 1] = Math.round(g / sum);
+        data[idx + 2] = Math.round(b / sum);
+        data[idx + 3] = 255;
+      }
     }
   }
   octx.putImageData(img, 0, 0);
