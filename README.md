@@ -67,7 +67,7 @@ An example flow demonstrating this pipeline is available at `frontend/examples/i
 
 For topological data analysis, click **TDA Demo** under Presets to load `frontend/examples/tda.json`, showcasing the **Vietoris-Rips**, **Persistence Diagram**, and **Persistence Barcode** nodes connected to a random point cloud.
 
-A bias report example using the Titanic dataset is available at `frontend/examples/bias_report.json`, computing survival rates by gender and presenting them in a table.
+A bias report example using the Titanic dataset is available at `frontend/examples/bias_report.json`, selecting the Age field and feeding it into the Bias Report node.
 
 ## Docker
 

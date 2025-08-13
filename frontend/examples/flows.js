@@ -318,96 +318,51 @@ const BIAS_REPORT_FLOW = {
     {
       "id": 1,
       "type": "data/titanic",
-      "pos": [
-        50,
-        50
-      ],
-      "size": {
-        "0": 210,
-        "1": 84
-      },
+      "pos": [50, 50],
+      "size": { "0": 210, "1": 84 },
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [
-        {
-          "name": "data",
-          "type": "array",
-          "links": [
-            1
-          ]
-        }
+        { "name": "data", "type": "array", "links": [1] }
       ],
-      "properties": {
-        "limit": 100
-      },
+      "properties": { "limit": 100 },
       "color": "#222",
       "bgcolor": "#444"
     },
     {
       "id": 2,
-      "type": "util/python",
-      "pos": [
-        250,
-        50
-      ],
-      "size": {
-        "0": 210,
-        "1": 170
-      },
+      "type": "transform/select",
+      "pos": [260, 50],
+      "size": { "0": 210, "1": 120 },
       "flags": {},
       "order": 1,
       "mode": 0,
       "inputs": [
-        {
-          "name": "data",
-          "type": "array",
-          "link": 1
-        }
+        { "name": "data", "type": "array", "link": 1 }
       ],
       "outputs": [
-        {
-          "name": "result",
-          "type": "*",
-          "links": [
-            2
-          ]
-        }
+        { "name": "values", "type": "array", "links": [2] },
+        { "name": "columns", "type": "array", "links": [] }
       ],
-      "properties": {
-        "code": "from collections import defaultdict\ncounts=defaultdict(lambda:{'total':0,'positive':0})\nfor d in data:\n    g=d['sex']\n    counts[g]['total']+=1\n    if d['survived']:\n        counts[g]['positive']+=1\nresult=[{'group':g,'survival_rate':counts[g]['positive']/counts[g]['total']} for g in counts]"
-      },
+      "properties": { "field": "Age", "fields": [] },
       "color": "#222",
       "bgcolor": "#444"
     },
     {
       "id": 3,
-      "type": "viz/table",
-      "pos": [
-        470,
-        50
-      ],
-      "size": {
-        "0": 300,
-        "1": 200
-      },
+      "type": "analysis/bias_report",
+      "pos": [480, 50],
+      "size": { "0": 220, "1": 150 },
       "flags": {},
       "order": 2,
       "mode": 0,
       "inputs": [
-        {
-          "name": "data",
-          "type": "array",
-          "link": 2
-        }
+        { "name": "data", "type": "array", "link": 2 }
       ],
       "outputs": [
-        {
-          "name": "image",
-          "type": "string",
-          "links": []
-        }
+        { "name": "report", "type": "object", "links": [] }
       ],
       "properties": {},
       "color": "#222",
@@ -415,26 +370,11 @@ const BIAS_REPORT_FLOW = {
     }
   ],
   "links": [
-    [
-      1,
-      1,
-      0,
-      2,
-      0,
-      "array"
-    ],
-    [
-      2,
-      2,
-      0,
-      3,
-      0,
-      "array"
-    ]
+    [1, 1, 0, 2, 0, "array"],
+    [2, 2, 0, 3, 0, "array"]
   ],
   "groups": [],
   "config": {},
   "extra": {},
   "version": 0.4
-}
-;
+};
