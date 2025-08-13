@@ -615,19 +615,11 @@ result = {
     }
 
     function presetTDA() {
-      const rand = LiteGraph.createNode('data/random');
-      rand.pos = [50, 150];
-      rand.properties.columns = 2;
-      rand.properties.count = 40;
-      const vr = LiteGraph.createNode('viz/vietoris_rips');
-      vr.pos = [250, 50];
-      const pd = LiteGraph.createNode('viz/persistence');
-      pd.pos = [250, 250];
-      graph.add(rand);
-      graph.add(vr);
-      graph.add(pd);
-      rand.connect(0, vr, 0);
-      rand.connect(0, pd, 0);
+      return fetch('examples/tda.json')
+        .then(r => r.json())
+        .then(data => {
+          graph.configure(data);
+        });
     }
 
     function presetPaletteDemo() {
@@ -669,8 +661,12 @@ result = {
       btn.textContent = p.name;
       btn.addEventListener('click', () => {
         graph.clear();
-        p.fn();
-        autoLayout();
+        const maybePromise = p.fn();
+        if (maybePromise && typeof maybePromise.then === 'function') {
+          maybePromise.then(() => autoLayout());
+        } else {
+          autoLayout();
+        }
       });
       presetList.appendChild(btn);
     });
