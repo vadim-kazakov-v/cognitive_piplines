@@ -34,14 +34,14 @@
     },
     {
       "id": 2,
-      "type": "util/python",
+      "type": "transform/select",
       "pos": [
-        250,
+        260,
         50
       ],
       "size": {
         "0": 210,
-        "1": 170
+        "1": 120
       },
       "flags": {},
       "order": 1,
@@ -55,29 +55,35 @@
       ],
       "outputs": [
         {
-          "name": "result",
-          "type": "*",
+          "name": "values",
+          "type": "array",
           "links": [
             2
           ]
+        },
+        {
+          "name": "columns",
+          "type": "array",
+          "links": []
         }
       ],
       "properties": {
-        "code": "from collections import defaultdict\ncounts=defaultdict(lambda:{'total':0,'positive':0})\nfor d in data:\n    g=d['sex']\n    counts[g]['total']+=1\n    if d['survived']:\n        counts[g]['positive']+=1\nresult=[{'group':g,'survival_rate':counts[g]['positive']/counts[g]['total']} for g in counts]"
+        "field": "Age",
+        "fields": []
       },
       "color": "#222",
       "bgcolor": "#444"
     },
     {
       "id": 3,
-      "type": "viz/table",
+      "type": "analysis/bias_report",
       "pos": [
-        470,
+        480,
         50
       ],
       "size": {
-        "0": 300,
-        "1": 200
+        "0": 220,
+        "1": 150
       },
       "flags": {},
       "order": 2,
@@ -91,8 +97,8 @@
       ],
       "outputs": [
         {
-          "name": "image",
-          "type": "string",
+          "name": "report",
+          "type": "object",
           "links": []
         }
       ],
@@ -124,3 +130,4 @@
   "extra": {},
   "version": 0.4
 }
+
