@@ -1,3 +1,8 @@
+function widgetAreaHeight(node) {
+  const count = node.widgets ? node.widgets.length : 0;
+  return count * (LiteGraph.NODE_WIDGET_HEIGHT + 4);
+}
+
 function TitanicNode() {
   this.addOutput('data', 'array');
   this.addProperty('limit', 5);
@@ -204,7 +209,7 @@ DescribeTableNode.prototype.onExecute = async function() {
 
     const top =
       LiteGraph.NODE_TITLE_HEIGHT +
-      LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+      widgetAreaHeight(this);
     const lineH = 14;
     this.size[1] = top + lineH * lines.length;
     this.setDirtyCanvas(true, true);
@@ -220,7 +225,7 @@ DescribeTableNode.prototype.onDrawForeground = function(ctx) {
   if (!this._lines) return;
   const top =
     LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    widgetAreaHeight(this);
   const lineH = 14;
   ctx.save();
   ctx.font = '12px monospace';

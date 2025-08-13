@@ -24,7 +24,7 @@ StatusNode.prototype.onExecute = function() {
   this._status = s;
   const top =
     LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    widgetAreaHeight(this);
   const lineH = 14;
   this.size[1] = top + lineH;
   this.setDirtyCanvas(true, true);
@@ -33,7 +33,7 @@ StatusNode.prototype.onDrawForeground = function(ctx) {
   if (this._status === undefined) return;
   const top =
     LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    widgetAreaHeight(this);
   ctx.save();
   ctx.font = '12px monospace';
   ctx.fillStyle = '#fff';

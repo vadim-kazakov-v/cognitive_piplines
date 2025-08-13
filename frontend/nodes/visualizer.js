@@ -3,7 +3,7 @@ function enableInteraction(node) {
   node._offset = [0, 0];
   node.onMouseDown = function(e) {
     const header = LiteGraph.NODE_TITLE_HEIGHT;
-    const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const widgets = widgetAreaHeight(this);
     const limit = header + widgets;
     const localX = e.canvasX - this.pos[0];
     const localY = e.canvasY - this.pos[1];
@@ -50,7 +50,7 @@ function enableInteraction(node) {
 function disableNodeDrag(node) {
   node.onMouseDown = function(e) {
     const header = LiteGraph.NODE_TITLE_HEIGHT;
-    const widgets = LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    const widgets = widgetAreaHeight(this);
     const limit = header + widgets;
     const localX = e.canvasX - this.pos[0];
     const localY = e.canvasY - this.pos[1];
@@ -97,7 +97,7 @@ VisualizerNode.prototype.onDrawBackground = function(ctx) {
   if (!this._img || !this._img.complete || !this._img.naturalWidth) return;
   const top =
     LiteGraph.NODE_TITLE_HEIGHT +
-    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+    widgetAreaHeight(this);
   const w = this.size[0];
   const h = this.size[1] - top;
   ctx.save();
