@@ -711,24 +711,13 @@ ImshowNode.prototype.onExecute = async function() {
   if (this._pending) return;
   this._pending = true;
   const { cmap, interpolation, vmin, vmax } = this.properties;
-  const vminArg = vmin === 'auto' || vmin === '' ? 'None' : Number(vmin);
-  const vmaxArg = vmax === 'auto' || vmax === '' ? 'None' : Number(vmax);
-  const code = `
-import io, base64, numpy as np, matplotlib.pyplot as plt
-data = np.array(data)
-fig, ax = plt.subplots()
-ax.imshow(data, cmap='${cmap}', interpolation='${interpolation}', vmin=${vminArg}, vmax=${vmaxArg})
-ax.axis('off')
-buf = io.BytesIO()
-plt.savefig(buf, format='png', bbox_inches='tight', pad_inches=0)
-plt.close(fig)
-result = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('ascii')
-`;
+  const vminArg = vmin === 'auto' || vmin === '' ? null : Number(vmin);
+  const vmaxArg = vmax === 'auto' || vmax === '' ? null : Number(vmax);
   try {
-    const res = await fetch('http://localhost:8000/python', {
+    const res = await fetch('http://localhost:8000/imshow', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, data: matrix }),
+      body: JSON.stringify({ data: matrix, cmap, interpolation, vmin: vminArg, vmax: vmaxArg }),
     });
     const img = await res.json();
     this.setOutputData(0, img);
@@ -2042,6 +2031,7 @@ VietorisRipsNode.prototype.onDrawBackground = function(ctx) {
 };
 registerNode('viz/vietoris_rips', VietorisRipsNode);
 
+
 function UncertaintyNode() {
   this.addInput('data', 'array');
   this.addOutput('image', 'string');
@@ -2105,3 +2095,84 @@ UncertaintyNode.prototype.onDrawBackground = function(ctx) {
   ctx.restore();
 };
 registerNode('viz/uncertainty', UncertaintyNode);
+
+
+function ContrastFocusNode() {
+  this.addInput('image', 'string');
+  this.addInput('mask', 'array');
+  this.addOutput('image', 'string');
+  this.size = [200, 150];
+  this._zoom = 1;
+  this._offset = [0, 0];
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.properties = { alpha: 0.5 };
+  enableInteraction(this);
+  this.addWidget('slider', 'alpha', this.properties.alpha, v => this.dimUnselected(v), {
+    min: 0,
+    max: 1,
+    step: 0.05,
+  });
+}
+ContrastFocusNode.title = 'Contrast Focus';
+ContrastFocusNode.icon = '🌗';
+ContrastFocusNode.prototype.highlightSelection = function(data, mask) {
+  if (!data) return null;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = data.width;
+  canvas.height = data.height;
+  ctx.drawImage(data, 0, 0);
+  ctx.fillStyle = `rgba(0,0,0,${this.properties.alpha})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (Array.isArray(mask) && mask.length === 4) {
+    const [x, y, w, h] = mask.map(Number);
+    ctx.clearRect(x, y, w, h);
+  }
+  return canvas.toDataURL();
+};
+ContrastFocusNode.prototype.dimUnselected = function(alpha) {
+  this.properties.alpha = Number(alpha);
+  this._processed = null;
+  this.setDirtyCanvas(true, true);
+};
+ContrastFocusNode.prototype.onExecute = function() {
+  const imgSrc = this.getInputData(0);
+  const mask = this.getInputData(1);
+  if (!imgSrc) return;
+  if (imgSrc !== this._current) {
+    this._current = imgSrc;
+    this._img = new Image();
+    this._img.onload = () => {
+      this._processed = null;
+      this.setDirtyCanvas(true, true);
+    };
+    this._img.src = imgSrc;
+  }
+  this._mask = mask;
+  if (this._img && this._img.complete && this._img.naturalWidth) {
+    if (!this._processed) {
+      const out = this.highlightSelection(this._img, this._mask);
+      this._processed = new Image();
+      this._processed.onload = () => this.setDirtyCanvas(true, true);
+      this._processed.src = out;
+      this.setOutputData(0, out);
+    } else {
+      this.setOutputData(0, this._processed.src);
+    }
+  }
+};
+ContrastFocusNode.prototype.onDrawBackground = function(ctx) {
+  if (!this._processed) return;
+  const top =
+    LiteGraph.NODE_TITLE_HEIGHT +
+    LiteGraph.NODE_WIDGET_HEIGHT * (this.widgets ? this.widgets.length : 0);
+  const w = this.size[0];
+  const h = this.size[1] - top;
+  ctx.save();
+  ctx.translate(this._offset[0], this._offset[1] + top);
+  ctx.scale(this._zoom, this._zoom);
+  ctx.drawImage(this._processed, 0, 0, w, h);
+  ctx.restore();
+};
+registerNode('viz/contrast_focus', ContrastFocusNode);
