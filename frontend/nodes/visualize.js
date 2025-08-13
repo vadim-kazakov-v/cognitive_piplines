@@ -719,7 +719,11 @@ ImshowNode.prototype.onExecute = async function() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ data: matrix, cmap, interpolation, vmin: vminArg, vmax: vmaxArg }),
     });
-    const img = await res.json();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || res.statusText);
+    }
+    const img = await res.text();
     this.setOutputData(0, img);
     if (img !== this._current) {
       this._current = img;
@@ -728,7 +732,7 @@ ImshowNode.prototype.onExecute = async function() {
       this._img.src = img;
     }
   } catch (err) {
-    console.error(err);
+    console.error('ImshowNode:', err);
   } finally {
     this._pending = false;
   }
