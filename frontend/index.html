@@ -582,6 +582,30 @@ result = {
       labels.connect(0, scatter, 1);
     }
 
+    function presetContrastFocus() {
+      const py = LiteGraph.createNode('util/python');
+      py.pos = [50, 150];
+      py.properties.code = "import numpy as np\nresult = np.random.rand(100,100).tolist()";
+      const im = LiteGraph.createNode('viz/imshow');
+      im.pos = [250, 150];
+      const mask = LiteGraph.createNode('util/python');
+      mask.pos = [250, 300];
+      mask.properties.code = "[30, 30, 40, 40]";
+      const focus = LiteGraph.createNode('viz/contrast_focus');
+      focus.pos = [450, 150];
+      const view = LiteGraph.createNode('viz/view');
+      view.pos = [650, 150];
+      graph.add(py);
+      graph.add(im);
+      graph.add(mask);
+      graph.add(focus);
+      graph.add(view);
+      py.connect(0, im, 0);
+      im.connect(0, focus, 0);
+      mask.connect(0, focus, 1);
+      focus.connect(0, view, 0);
+    }
+
     function presetImShow() {
       const py = LiteGraph.createNode('util/python');
       py.pos = [50, 150];
@@ -649,6 +673,7 @@ result = {
       { name: 'Random Graph', fn: presetRandomGraph },
       { name: 'Glyphs', fn: presetGlyphs },
       { name: 'Random Scatter', fn: presetRandomScatter },
+      { name: 'Contrast Focus', fn: presetContrastFocus },
       { name: 'ImShow Demo', fn: presetImShow },
       { name: 'Voronoi', fn: presetVoronoi },
       { name: 'TDA Demo', fn: presetTDA },
