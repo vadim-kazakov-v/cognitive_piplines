@@ -7,6 +7,7 @@ import base64
 import pickle
 import json
 import requests
+import urllib3
 
 import math
 import numpy as np
@@ -18,6 +19,9 @@ import psycopg2
 from psycopg2.extras import Json
 
 load_dotenv()
+
+# Suppress warnings for disabled SSL certificate verification
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def getAccessToken(client_id: str | None = None, client_secret: str | None = None) -> str:
@@ -42,7 +46,10 @@ def getAccessToken(client_id: str | None = None, client_secret: str | None = Non
         "Content-Type": "application/x-www-form-urlencoded",
     }
     data = {"grant_type": "client_credentials", "scope": scope}
-    response = requests.post(oauth_url, headers=headers, data=data, timeout=30)
+    # Disable SSL certificate verification to support self-signed certificates
+    response = requests.post(
+        oauth_url, headers=headers, data=data, timeout=30, verify=False
+    )
     response.raise_for_status()
     return response.json().get("access_token", "")
 
@@ -873,6 +880,7 @@ def copilot_endpoint(req: CopilotRequest) -> dict:
             headers=headers,
             json={"model": req.model, "messages": messages},
             timeout=60,
+            verify=False,
         )
         response.raise_for_status()
         data = response.json()
