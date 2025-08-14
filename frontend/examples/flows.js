@@ -536,7 +536,6 @@ const UNCERTAINTY_FLOW = {
       "properties": {},
       "color": "#222",
       "bgcolor": "#444"
-    },
     }
   ],
   "links": [
