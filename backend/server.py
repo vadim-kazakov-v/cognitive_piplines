@@ -39,7 +39,7 @@ def getAccessToken(client_id: str | None = None, client_secret: str | None = Non
         "GIGACHAT_OAUTH_URL", "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
     )
     if not client_id or not client_secret:
-        raise RuntimeError("GigaChat credentials not configured")
+        raise HTTPException(status_code=400, detail="GigaChat credentials not configured")
     auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
     headers = {
         "Authorization": f"Basic {auth}",
@@ -47,11 +47,19 @@ def getAccessToken(client_id: str | None = None, client_secret: str | None = Non
     }
     data = {"grant_type": "client_credentials", "scope": scope}
     # Disable SSL certificate verification to support self-signed certificates
-    response = requests.post(
-        oauth_url, headers=headers, data=data, timeout=30, verify=False
-    )
-    response.raise_for_status()
-    return response.json().get("access_token", "")
+    try:
+        response = requests.post(
+            oauth_url, headers=headers, data=data, timeout=30, verify=False
+        )
+        response.raise_for_status()
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(
+            status_code=502, detail=f"Failed to retrieve access token: {exc}"
+        ) from exc
+    token = response.json().get("access_token")
+    if not token:
+        raise HTTPException(status_code=502, detail="No access token in response")
+    return token
 
 app = FastAPI(title="Cognitive Pipelines API")
 app.add_middleware(
