@@ -8,6 +8,7 @@ import pickle
 import json
 import requests
 import urllib3
+import uuid
 
 import math
 import numpy as np
@@ -44,8 +45,10 @@ def getAccessToken(client_id: str | None = None, client_secret: str | None = Non
     headers = {
         "Authorization": f"Basic {auth}",
         "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+        "RqUID": str(uuid.uuid4()),
     }
-    data = {"grant_type": "client_credentials", "scope": scope}
+    data = {"scope": scope}
     # Disable SSL certificate verification to support self-signed certificates
     try:
         response = requests.post(
@@ -864,13 +867,18 @@ def copilot_endpoint(req: CopilotRequest) -> dict:
     """Forward question and context to the GigaChat API."""
     url = os.environ.get(
         "GIGACHAT_API_URL",
-        "https://gigachat.openapi.ai/v1/chat/completions",
+        "https://gigachat.devices.sberbank.ru/api/v1/chat/completions",
     )
     token = getAccessToken(req.client_id, req.client_secret)
     headers = {
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
+        "Accept": "application/json",
+        "X-Request-ID": str(uuid.uuid4()),
+        "X-Session-ID": str(uuid.uuid4()),
     }
+    if req.client_id:
+        headers["X-Client-ID"] = req.client_id
     messages: list[dict[str, str]] = []
     system_prompt = req.system_prompt or DEFAULT_COPILOT_PROMPTS.get(req.mode)
     if system_prompt:
