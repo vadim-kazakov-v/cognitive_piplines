@@ -19,6 +19,33 @@ from psycopg2.extras import Json
 
 load_dotenv()
 
+
+def getAccessToken(client_id: str | None = None, client_secret: str | None = None) -> str:
+    """Retrieve OAuth access token for GigaChat API.
+
+    Args:
+        client_id: Optional client identifier overriding env var.
+        client_secret: Optional client secret overriding env var.
+    """
+
+    client_id = client_id or os.environ.get("GIGACHAT_CLIENT_ID")
+    client_secret = client_secret or os.environ.get("GIGACHAT_CLIENT_SECRET")
+    scope = os.environ.get("GIGACHAT_SCOPE", "GIGACHAT_API_PERS")
+    oauth_url = os.environ.get(
+        "GIGACHAT_OAUTH_URL", "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+    )
+    if not client_id or not client_secret:
+        raise RuntimeError("GigaChat credentials not configured")
+    auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    headers = {
+        "Authorization": f"Basic {auth}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    data = {"grant_type": "client_credentials", "scope": scope}
+    response = requests.post(oauth_url, headers=headers, data=data, timeout=30)
+    response.raise_for_status()
+    return response.json().get("access_token", "")
+
 app = FastAPI(title="Cognitive Pipelines API")
 app.add_middleware(
     CORSMiddleware,
@@ -121,11 +148,12 @@ class RFPredictRequest(BaseModel):
 class CopilotRequest(BaseModel):
     question: str
     model: str
-    token: str
     flow: Any | None = None
     images: List[str] | None = None
     system_prompt: str | None = None
     mode: str = "qna"
+    client_id: str | None = None
+    client_secret: str | None = None
 
 
 DEFAULT_COPILOT_PROMPTS: dict[str, str] = {
@@ -823,8 +851,9 @@ def copilot_endpoint(req: CopilotRequest) -> dict:
         "GIGACHAT_API_URL",
         "https://gigachat.openapi.ai/v1/chat/completions",
     )
+    token = getAccessToken(req.client_id, req.client_secret)
     headers = {
-        "Authorization": f"Bearer {req.token}",
+        "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
     }
     messages: list[dict[str, str]] = []

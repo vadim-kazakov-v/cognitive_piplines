@@ -101,6 +101,10 @@
       gap: 4px;
     }
     #copilot {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
       width: 300px;
       padding: 10px;
       box-sizing: border-box;
@@ -109,8 +113,10 @@
       gap: 8px;
       border-left: 1px solid #444;
       overflow-y: auto;
+      z-index: 10;
     }
-    #copilot textarea {
+    #copilot textarea,
+    #copilot select {
       background: #444;
       border: 1px solid #666;
       color: #fff;
@@ -131,6 +137,26 @@
       position: absolute;
       top: 10px;
       right: 10px;
+      background: #444;
+      border: 1px solid #666;
+      color: #fff;
+      padding: 6px 8px;
+      cursor: pointer;
+      z-index: 11;
+    }
+    #copilot-show:hover {
+      background: #555;
+    }
+    .modal-content input,
+    .modal-content textarea,
+    .modal-content button {
+      background: #444;
+      border: 1px solid #666;
+      color: #fff;
+      padding: 6px 8px;
+    }
+    .modal-content button:hover {
+      background: #555;
     }
   </style>
 </head>
@@ -172,14 +198,17 @@
   <div id="config-modal" class="modal">
     <div class="modal-content">
       <h2 style="margin-top:0;margin-bottom:10px;text-align:center;">Global Configuration</h2>
-      <label style="display:block;margin-bottom:8px;">GigaChat Token
-        <input id="gigachat-token" type="text" style="width:100%" />
-      </label>
       <label style="display:block;margin-bottom:8px;">Model Name
         <input id="model-name" type="text" style="width:100%" value="GigaChat-2-Max" />
       </label>
       <label style="display:block;margin-bottom:8px;">System Prompt
         <textarea id="system-prompt" rows="3" style="width:100%"></textarea>
+      </label>
+      <label style="display:block;margin-bottom:8px;">Client ID
+        <input id="client-id" type="text" style="width:100%" />
+      </label>
+      <label style="display:block;margin-bottom:8px;">Client Secret
+        <input id="client-secret" type="password" style="width:100%" />
       </label>
       <div style="margin-top:8px; display:flex; gap:6px; justify-content:flex-end;">
         <button id="save-config">Save</button>
