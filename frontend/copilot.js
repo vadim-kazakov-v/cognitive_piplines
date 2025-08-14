@@ -24,11 +24,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const payload = {
       question,
       model: window.globalConfig.modelName,
-      token: window.globalConfig.gigachatToken,
       mode
     };
     if (window.globalConfig.systemPrompt.trim()) {
       payload.system_prompt = window.globalConfig.systemPrompt.trim();
+    }
+    if (window.globalConfig.clientId && window.globalConfig.clientSecret) {
+      payload.client_id = window.globalConfig.clientId;
+      payload.client_secret = window.globalConfig.clientSecret;
     }
     if (mode !== 'generate') {
       payload.flow = graph.serialize ? graph.serialize() : {};
