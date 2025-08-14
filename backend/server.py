@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, List
 import os
+import logging
 
 from dotenv import load_dotenv
 import base64
@@ -15,11 +16,14 @@ import numpy as np
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import psycopg2
 from psycopg2.extras import Json
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Suppress warnings for disabled SSL certificate verification
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -172,6 +176,10 @@ class CopilotRequest(BaseModel):
     mode: str = "qna"
     client_id: str | None = None
     client_secret: str | None = None
+    node_descriptions: List[str] | None = Field(
+        default=None,
+        description="Descriptions of nodes including allowed inputs and outputs",
+    )
 
 
 DEFAULT_COPILOT_PROMPTS: dict[str, str] = {
@@ -889,12 +897,16 @@ def copilot_endpoint(req: CopilotRequest) -> dict:
         context["flow"] = req.flow
     if req.images:
         context["images"] = req.images
+    if req.node_descriptions:
+        context["node_descriptions"] = req.node_descriptions
     messages.append({"role": "user", "content": json.dumps(context)})
     try:
+        payload = {"model": req.model, "messages": messages}
+        logger.info("LLM request: %s", json.dumps(payload, ensure_ascii=False))
         response = requests.post(
             url,
             headers=headers,
-            json={"model": req.model, "messages": messages},
+            json=payload,
             timeout=60,
             verify=False,
         )
