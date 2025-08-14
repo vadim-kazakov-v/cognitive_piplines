@@ -8,6 +8,7 @@ import pickle
 import json
 import requests
 import urllib3
+import uuid
 
 import math
 import numpy as np
@@ -44,8 +45,10 @@ def getAccessToken(client_id: str | None = None, client_secret: str | None = Non
     headers = {
         "Authorization": f"Basic {auth}",
         "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+        "RqUID": str(uuid.uuid4()),
     }
-    data = {"grant_type": "client_credentials", "scope": scope}
+    data = {"scope": scope}
     # Disable SSL certificate verification to support self-signed certificates
     try:
         response = requests.post(
