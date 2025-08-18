@@ -33,9 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
       payload.client_id = window.globalConfig.clientId;
       payload.client_secret = window.globalConfig.clientSecret;
     }
+    payload.node_descriptions = collectNodeDescriptions();
     if (mode !== 'generate') {
       payload.flow = graph.serialize ? graph.serialize() : {};
-      payload.node_descriptions = collectNodeDescriptions();
     }
     if (mode === 'qna') {
       payload.images = collectNodeImages();
@@ -153,25 +153,26 @@ const NODE_DESCRIPTIONS = {
 
 function collectNodeDescriptions() {
   const descriptions = [];
-  if (window.graph && graph._nodes) {
-    graph._nodes.forEach(n => {
-      const title = n.title || n.type;
-      const parts = [];
-      if (NODE_DESCRIPTIONS[title]) {
-        parts.push(`${title} - ${NODE_DESCRIPTIONS[title]}`);
-      } else {
-        parts.push(title);
-      }
-      const inputs = (n.inputs || [])
-        .map(i => `${i.name}: ${i.type}`)
-        .join(', ');
-      const outputs = (n.outputs || [])
-        .map(o => `${o.name}: ${o.type}`)
-        .join(', ');
-      parts.push(`Inputs: ${inputs || 'none'}`);
-      parts.push(`Outputs: ${outputs || 'none'}`);
-      descriptions.push(parts.join('. '));
-    });
-  }
+  const registry = LiteGraph.registered_node_types || {};
+  Object.keys(registry).forEach(type => {
+    const klass = registry[type];
+    const proto = klass.prototype || {};
+    const title = proto.title || type;
+    const parts = [];
+    if (NODE_DESCRIPTIONS[title]) {
+      parts.push(`${title} - ${NODE_DESCRIPTIONS[title]}`);
+    } else {
+      parts.push(title);
+    }
+    const inputs = (proto.inputs || [])
+      .map(i => `${i.name}: ${i.type}`)
+      .join(', ');
+    const outputs = (proto.outputs || [])
+      .map(o => `${o.name}: ${o.type}`)
+      .join(', ');
+    parts.push(`Inputs: ${inputs || 'none'}`);
+    parts.push(`Outputs: ${outputs || 'none'}`);
+    descriptions.push(parts.join('. '));
+  });
   return descriptions;
 }
