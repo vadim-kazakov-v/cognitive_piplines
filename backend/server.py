@@ -202,10 +202,121 @@ DEFAULT_COPILOT_PROMPTS: dict[str, str] = {
     ),
 }
 
-EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "frontend" / "examples"
+EXAMPLE_FLOWS: dict[str, Any] = {
+    "imshow.json": {
+        "last_node_id": 2,
+        "last_link_id": 1,
+        "nodes": [
+            {
+                "id": 1,
+                "type": "util/python",
+                "pos": [50, 150],
+                "size": {"0": 210, "1": 58},
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [{"name": "data", "type": "array", "link": None}],
+                "outputs": [{"name": "result", "type": "*", "links": [1]}],
+                "properties": {
+                    "code": "import numpy as np\\nresult = np.random.rand(20,20).tolist()"
+                },
+                "color": "#222",
+                "bgcolor": "#444",
+            },
+            {
+                "id": 2,
+                "type": "viz/imshow",
+                "pos": [250, 150],
+                "size": {"0": 210, "1": 130},
+                "flags": {},
+                "order": 1,
+                "mode": 0,
+                "inputs": [{"name": "matrix", "type": "array", "link": 1}],
+                "outputs": [{"name": "image", "type": "string", "links": []}],
+                "properties": {
+                    "cmap": "viridis",
+                    "interpolation": "bilinear",
+                    "vmin": "auto",
+                    "vmax": "auto",
+                },
+                "color": "#222",
+                "bgcolor": "#444",
+            },
+        ],
+        "links": [[1, 1, 0, 2, 0, "array"]],
+        "groups": [],
+        "config": {},
+        "extra": {},
+        "version": 0.4,
+    },
+    "bias_report.json": {
+        "last_node_id": 3,
+        "last_link_id": 2,
+        "nodes": [
+            {
+                "id": 1,
+                "type": "data/titanic",
+                "pos": [50, 50],
+                "size": {"0": 210, "1": 84},
+                "flags": {},
+                "order": 0,
+                "mode": 0,
+                "inputs": [],
+                "outputs": [{"name": "data", "type": "array", "links": [1]}],
+                "properties": {"limit": 100},
+                "color": "#222",
+                "bgcolor": "#444",
+            },
+            {
+                "id": 2,
+                "type": "transform/select",
+                "pos": [260, 50],
+                "size": {"0": 210, "1": 120},
+                "flags": {},
+                "order": 1,
+                "mode": 0,
+                "inputs": [{"name": "data", "type": "array", "link": 1}],
+                "outputs": [
+                    {"name": "values", "type": "array", "links": [2]},
+                    {"name": "columns", "type": "array", "links": []},
+                ],
+                "properties": {"field": "Age", "fields": []},
+                "color": "#222",
+                "bgcolor": "#444",
+            },
+            {
+                "id": 3,
+                "type": "analysis/bias_report",
+                "pos": [480, 50],
+                "size": {"0": 220, "1": 150},
+                "flags": {},
+                "order": 2,
+                "mode": 0,
+                "inputs": [{"name": "data", "type": "array", "link": 2}],
+                "outputs": [{"name": "report", "type": "object", "links": []}],
+                "properties": {},
+                "color": "#222",
+                "bgcolor": "#444",
+            },
+        ],
+        "links": [
+            [1, 1, 0, 2, 0, "array"],
+            [2, 2, 0, 3, 0, "array"],
+        ],
+        "groups": [],
+        "config": {},
+        "extra": {},
+        "version": 0.4,
+    },
+}
+
 
 def load_example(name: str) -> Any:
-    return json.loads((EXAMPLES_DIR / name).read_text())
+    try:
+        return EXAMPLE_FLOWS[name]
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Example {name} not found") from exc
+
 
 GENERATION_EXAMPLES = [
     {
