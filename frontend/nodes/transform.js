@@ -384,3 +384,40 @@ AutoNumericNode.prototype.onExecute = function() {
 };
 registerNode('transform/autonumeric', AutoNumericNode);
 
+function FlattenJsonNode() {
+  this.addInput('data', 'array');
+  this.addOutput('data', 'array');
+  this.color = '#222';
+  this.bgcolor = '#444';
+}
+FlattenJsonNode.title = 'Flatten JSON';
+FlattenJsonNode.icon = '📄';
+FlattenJsonNode.prototype._flatten = function(obj, prefix, out) {
+  if (Array.isArray(obj)) {
+    obj.forEach((v, i) => this._flatten(v, prefix ? `${prefix}.${i}` : String(i), out));
+  } else if (obj && typeof obj === 'object') {
+    for (const k in obj) {
+      this._flatten(obj[k], prefix ? `${prefix}.${k}` : k, out);
+    }
+  } else {
+    out[prefix] = obj;
+  }
+};
+FlattenJsonNode.prototype.onExecute = function() {
+  const data = this.getInputData(0);
+  if (!Array.isArray(data)) return;
+  const rows = data.map(d => {
+    const out = {};
+    this._flatten(d, '', out);
+    return out;
+  });
+  const keys = Array.from(new Set(rows.flatMap(r => Object.keys(r))));
+  const result = rows.map(r => {
+    const obj = {};
+    keys.forEach(k => (obj[k] = k in r ? r[k] : null));
+    return obj;
+  });
+  this.setOutputData(0, result);
+};
+registerNode('transform/flatten_json', FlattenJsonNode);
+

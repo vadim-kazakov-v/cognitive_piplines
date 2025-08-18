@@ -384,3 +384,64 @@ RandomGraphNode.prototype.onExecute = function() {
 };
 registerNode('data/random_graph', RandomGraphNode);
 
+function JsonTemplateNode() {
+  this.addOutput('data', 'array');
+  this.addProperty('template', '');
+  this.color = '#222';
+  this.bgcolor = '#444';
+  this.addWidget('text', 'template', this.properties.template, v => (this.properties.template = v), { multiline: true });
+}
+JsonTemplateNode.title = 'JSON Template';
+JsonTemplateNode.icon = '🧩';
+JsonTemplateNode.prototype._range = function(arr) {
+  const [start, end, step] = arr;
+  const out = [];
+  for (let v = start; step >= 0 ? v <= end + 1e-9 : v >= end - 1e-9; v += step) {
+    out.push(Number(v.toFixed(10)));
+  }
+  return out;
+};
+JsonTemplateNode.prototype._expand = function(value) {
+  if (Array.isArray(value)) {
+    if (value.length === 3 && value.every(v => typeof v === 'number')) {
+      return this._range(value);
+    }
+    if (value.every(v => typeof v !== 'object')) {
+      return value.slice();
+    }
+    const parts = value.map(v => this._expand(v));
+    const combos = parts.reduce((acc, arr) => {
+      const out = [];
+      acc.forEach(a => arr.forEach(b => out.push(a.concat([b]))));
+      return out;
+    }, [[]]);
+    return combos;
+  }
+  if (value && typeof value === 'object') {
+    const keys = Object.keys(value);
+    const parts = keys.map(k => this._expand(value[k]));
+    const combos = parts.reduce((acc, arr) => {
+      const out = [];
+      acc.forEach(a => arr.forEach(b => out.push(a.concat([b]))));
+      return out;
+    }, [[]]);
+    return combos.map(vals => {
+      const obj = {};
+      keys.forEach((k, i) => (obj[k] = vals[i]));
+      return obj;
+    });
+  }
+  return [value];
+};
+JsonTemplateNode.prototype.onExecute = function() {
+  try {
+    const tmpl = this.properties.template && JSON.parse(this.properties.template);
+    const out = tmpl ? this._expand(tmpl) : null;
+    this.setOutputData(0, out);
+  } catch (err) {
+    console.error(err);
+    this.setOutputData(0, null);
+  }
+};
+registerNode('data/json_template', JsonTemplateNode);
+
