@@ -185,18 +185,38 @@ class CopilotRequest(BaseModel):
 DEFAULT_COPILOT_PROMPTS: dict[str, str] = {
     "qna": (
         "You are a helpful assistant that answers questions about the user's"
-        " cognitive flow. Use the provided flow JSON and node images to inform"
+        " cognitive flow. Use the provided flow JSON, node images, and"
+        " descriptions of nodes (including their inputs and outputs) to inform"
         " your answers."
     ),
     "generate": (
-        "You create new cognitive flows from scratch. Given a user request,"
-        " respond with only JSON describing a valid flow for the application."
+        "You create new cognitive flows from scratch using the available node"
+        " types. Given a user request and a list of node descriptions with their"
+        " inputs and outputs, respond with only JSON describing a valid flow for"
+        " the application."
     ),
     "modify": (
-        "You edit an existing cognitive flow. Using the provided flow JSON and"
-        " the user's instructions, return only JSON for the updated flow."
+        "You edit an existing cognitive flow. Using the provided flow JSON,"
+        " the list of node descriptions with inputs and outputs, and the user's"
+        " instructions, return only JSON for the updated flow."
     ),
 }
+
+EXAMPLES_DIR = Path(__file__).resolve().parents[1] / "frontend" / "examples"
+
+def load_example(name: str) -> Any:
+    return json.loads((EXAMPLES_DIR / name).read_text())
+
+GENERATION_EXAMPLES = [
+    {
+        "prompt": "Show a random matrix as an image",
+        "flow": load_example("imshow.json"),
+    },
+    {
+        "prompt": "Create a bias report for the Age field of Titanic data",
+        "flow": load_example("bias_report.json"),
+    },
+]
 
 class Series(BaseModel):
     """Wrapper for a list of numeric values."""
@@ -899,6 +919,8 @@ def copilot_endpoint(req: CopilotRequest) -> dict:
         context["images"] = req.images
     if req.node_descriptions:
         context["node_descriptions"] = req.node_descriptions
+    if req.mode == "generate":
+        context["examples"] = GENERATION_EXAMPLES
     messages.append({"role": "user", "content": json.dumps(context)})
     try:
         payload = {"model": req.model, "messages": messages}
